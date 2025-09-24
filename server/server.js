@@ -406,12 +406,12 @@ app.get('/health', (req, res) => {
 
 // Admin UI
 app.get('/admin', (req, res) => {
-  res.sendFile(new URL('./public/index.html', import.meta.url).pathname);
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Catch-all route for admin panel (handle client-side routing)
 app.get('/admin/*', (req, res) => {
-  res.sendFile(new URL('./public/index.html', import.meta.url).pathname);
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // ===== USER AUTHENTICATION ROUTES =====
