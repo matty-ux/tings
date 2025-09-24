@@ -1,0 +1,500 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Vend GB Admin</title>
+    <style>
+      :root {
+        --primary: #0f62fe; 
+        --bg: #f7f9fc; 
+        --text: #0f172a; 
+        --muted: #6b7280; 
+        --card: #ffffff; 
+        --border: #e5e7eb; 
+        --soft: #f1f5f9;
+        --sidebar-bg: #ffffff;
+        --sidebar-border: #e5e7eb;
+      }
+      [data-theme="dark"] {
+        --primary: #4f8cff; 
+        --bg: #0b1220; 
+        --text: #e5e7eb; 
+        --muted: #9ca3af; 
+        --card: #0f172a; 
+        --border: #1f2937; 
+        --soft: #111827;
+        --sidebar-bg: #0f172a;
+        --sidebar-border: #1f2937;
+      }
+      
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { 
+        font-family: -apple-system, system-ui, Helvetica, Arial, sans-serif; 
+        background: var(--bg); 
+        color: var(--text);
+        display: flex;
+        height: 100vh;
+        overflow: hidden;
+      }
+      
+      /* Sidebar */
+      .sidebar {
+        width: 280px;
+        background: var(--sidebar-bg);
+        border-right: 1px solid var(--sidebar-border);
+        padding: 20px;
+        overflow-y: auto;
+        flex-shrink: 0;
+      }
+      
+      .sidebar h1 {
+        color: var(--primary);
+        margin-bottom: 20px;
+        font-size: 20px;
+      }
+      
+      .status {
+        padding: 8px 12px;
+        background: #e5f4ea;
+        color: #256c2d;
+        border-radius: 6px;
+        font-size: 12px;
+        margin-bottom: 20px;
+      }
+      
+      .server-info {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 20px;
+        font-size: 12px;
+      }
+      
+      .server-info h3 {
+        margin-bottom: 8px;
+        color: var(--primary);
+      }
+      
+      .server-info p {
+        margin: 4px 0;
+        color: var(--muted);
+      }
+      
+      .btn {
+        padding: 8px 12px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: var(--card);
+        cursor: pointer;
+        transition: .2s ease;
+        color: var(--text);
+        text-decoration: none;
+        display: inline-block;
+        font-size: 12px;
+        margin: 4px 0;
+        width: 100%;
+        text-align: left;
+      }
+      
+      .btn:hover {
+        background: var(--soft);
+        transform: translateY(-1px);
+      }
+      
+      .btn.primary {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+      }
+      
+      .btn.primary:hover {
+        background: #0043ce;
+      }
+      
+      /* Main Content */
+      .main-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+      }
+      
+      .toolbar {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+      
+      .toolbar .left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      
+      .toolbar .right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      .search-input {
+        padding: 8px 12px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--card);
+        color: var(--text);
+        min-width: 200px;
+      }
+      
+      .select {
+        padding: 8px 12px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--card);
+        color: var(--text);
+      }
+      
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      }
+      
+      table {
+        border-collapse: separate;
+        border-spacing: 0;
+        width: 100%;
+        margin-top: 12px;
+        background: var(--card);
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+      }
+      
+      thead th {
+        position: sticky;
+        top: 0;
+        background: var(--soft);
+        text-align: left;
+        font-weight: 600;
+        font-size: 13px;
+        color: var(--muted);
+        padding: 12px;
+      }
+      
+      td {
+        border-bottom: 1px solid var(--border);
+        padding: 12px;
+        vertical-align: top;
+      }
+      
+      tbody tr:hover {
+        background: rgba(15,98,254,0.05);
+      }
+      
+      .badge {
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: #e5f4ea;
+        color: #256c2d;
+        font-size: 12px;
+      }
+      
+      .pill {
+        display: inline-block;
+        padding: 4px 8px;
+        background: #eef2ff;
+        color: #3730a3;
+        border-radius: 999px;
+        font-size: 12px;
+        margin-right: 6px;
+      }
+      
+      .hint {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      
+      .inline {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      
+      /* Modal */
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.45);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      }
+      
+      .modal {
+        width: 95%;
+        max-width: 800px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        color: var(--text);
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+      
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 12px;
+      }
+      
+      .col-6 { grid-column: span 6; }
+      .col-12 { grid-column: span 12; }
+      
+      .close {
+        background: transparent;
+        border: none;
+        font-size: 20px;
+        cursor: pointer;
+        color: var(--text);
+        float: right;
+      }
+      
+      input[type="text"], input[type="number"], textarea, select {
+        padding: 8px 12px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--card);
+        color: var(--text);
+        width: 100%;
+      }
+      
+      textarea {
+        min-height: 60px;
+        resize: vertical;
+      }
+      
+      label {
+        display: block;
+        margin-bottom: 4px;
+        font-weight: 500;
+        font-size: 13px;
+      }
+      
+      .row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+        align-items: center;
+        justify-content: space-between;
+      }
+      
+      /* Toast */
+      .toast {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: var(--card);
+        color: var(--text);
+        border: 1px solid var(--border);
+        padding: 12px 16px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,.15);
+        display: none;
+        z-index: 1001;
+      }
+      
+      @media (max-width: 768px) {
+        body {
+          flex-direction: column;
+        }
+        
+        .sidebar {
+          width: 100%;
+          height: auto;
+          border-right: none;
+          border-bottom: 1px solid var(--sidebar-border);
+        }
+        
+        .toolbar .left {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        
+        .search-input {
+          min-width: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <h1>🛠️ Vend GB Admin</h1>
+      <div class="status">✅ Server Online</div>
+      
+      <div class="server-info">
+        <h3>Server Status</h3>
+        <p><strong>Environment:</strong> <span id="environment">production</span></p>
+        <p><strong>Uptime:</strong> <span id="uptime">0</span>s</p>
+        <p><strong>Region:</strong> Railway EU</p>
+      </div>
+      
+      <div class="server-info">
+        <h3>Quick Actions</h3>
+        <a href="/api/products" class="btn" target="_blank">📱 Products API</a>
+        <a href="/api/admin/orders" class="btn" target="_blank">📦 Orders API</a>
+        <a href="/health" class="btn" target="_blank">❤️ Health Check</a>
+        <button class="btn" onclick="toggleTheme()">🌙 Toggle Theme</button>
+        <button class="btn" onclick="refresh()">🔄 Refresh Data</button>
+      </div>
+      
+      <div class="server-info">
+        <h3>Statistics</h3>
+        <p><strong>Products:</strong> <span id="productCount">-</span></p>
+        <p><strong>Orders:</strong> <span id="orderCount">-</span></p>
+        <p><strong>Active:</strong> <span id="activeProducts">-</span></p>
+      </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="main-content">
+      <div class="toolbar">
+        <div class="left">
+          <h1>Products</h1>
+          <input id="search" type="text" class="search-input" placeholder="Search products...">
+          <select id="categoryFilter" class="select">
+            <option value="">All categories</option>
+          </select>
+          <select id="availFilter" class="select">
+            <option value="">All availability</option>
+            <option value="in">In stock</option>
+            <option value="out">Out of stock</option>
+          </select>
+        </div>
+        <div class="right">
+          <button class="btn primary" onclick="openModal()">+ Add Product</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <table id="table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Price</th>
+              <th>Stock</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
+    
+    <!-- Modal -->
+    <div id="modal" class="modal-backdrop">
+      <div class="modal">
+        <div class="row">
+          <h2 id="modalTitle">New Product</h2>
+          <button class="close" onclick="closeModal()">×</button>
+        </div>
+        <form id="productForm" onsubmit="addProduct(event)">
+          <div class="grid">
+            <div class="col-6">
+              <label>SKU / Item Code</label>
+              <input id="sku" type="text" placeholder="SKU">
+            </div>
+            <div class="col-6">
+              <label>Sort Order</label>
+              <input id="sortOrder" type="number" placeholder="0">
+            </div>
+            <div class="col-12">
+              <label>Product Name *</label>
+              <input id="name" type="text" required placeholder="Product name">
+            </div>
+            <div class="col-6">
+              <label>Category</label>
+              <input id="category" type="text" placeholder="e.g., Pizza">
+            </div>
+            <div class="col-6">
+              <label>Tags (comma separated)</label>
+              <input id="tags" type="text" placeholder="vegan, spicy">
+            </div>
+            <div class="col-12">
+              <label>Short Description</label>
+              <input id="shortDesc" type="text" placeholder="Brief description">
+            </div>
+            <div class="col-12">
+              <label>Full Description</label>
+              <textarea id="fullDesc" placeholder="Detailed description"></textarea>
+            </div>
+            <div class="col-6">
+              <label>Base Price *</label>
+              <input id="price" type="number" step="0.01" required placeholder="0.00">
+            </div>
+            <div class="col-6">
+              <label>Sale Price</label>
+              <input id="salePrice" type="number" step="0.01" placeholder="0.00">
+            </div>
+            <div class="col-6">
+              <label>Cost Price</label>
+              <input id="costPrice" type="number" step="0.01" placeholder="0.00">
+            </div>
+            <div class="col-6">
+              <label>Tax Rate %</label>
+              <input id="taxRate" type="number" step="0.01" placeholder="0">
+            </div>
+            <div class="col-6">
+              <label>Image URL</label>
+              <input id="imageUrl" type="text" placeholder="https://...">
+            </div>
+            <div class="col-6">
+              <label>Stock Quantity</label>
+              <input id="stockQty" type="number" placeholder="0">
+            </div>
+            <div class="col-6">
+              <label>Max Order Qty</label>
+              <input id="maxOrderQty" type="number" placeholder="0">
+            </div>
+            <div class="col-6">
+              <label>Prep Time (mins)</label>
+              <input id="prepTimeMins" type="number" placeholder="0">
+            </div>
+            <div class="col-6">
+              <label>
+                <input id="available" type="checkbox" checked> Available
+              </label>
+            </div>
+            <div class="col-6">
+              <label>
+                <input id="active" type="checkbox" checked> Active
+              </label>
+            </div>
+            <div class="col-12" style="display:flex; gap:8px; justify-content:flex-end; margin-top:16px">
+              <button type="button" class="btn" onclick="closeModal()">Cancel</button>
+              <button id="submitBtn" type="submit" class="btn primary">Create</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+    
+    <script src="admin.js"></script>
+  </body>
+</html>
