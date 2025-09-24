@@ -352,6 +352,12 @@
       </div>
       
       <div class="server-info">
+        <h3>Navigation</h3>
+        <button class="btn" onclick="showProducts()">📦 Products</button>
+        <button class="btn" onclick="showOrders()">📋 Orders</button>
+      </div>
+      
+      <div class="server-info">
         <h3>Quick Actions</h3>
         <a href="/api/products" class="btn" target="_blank">📱 Products API</a>
         <a href="/api/admin/orders" class="btn" target="_blank">📦 Orders API</a>
@@ -370,37 +376,79 @@
     
     <!-- Main Content -->
     <div class="main-content">
-      <div class="toolbar">
-        <div class="left">
-          <h1>Products</h1>
-          <input id="search" type="text" class="search-input" placeholder="Search products...">
-          <select id="categoryFilter" class="select">
-            <option value="">All categories</option>
-          </select>
-          <select id="availFilter" class="select">
-            <option value="">All availability</option>
-            <option value="in">In stock</option>
-            <option value="out">Out of stock</option>
-          </select>
+      <!-- Products View -->
+      <div id="productsView">
+        <div class="toolbar">
+          <div class="left">
+            <h1>Products</h1>
+            <input id="search" type="text" class="search-input" placeholder="Search products...">
+            <select id="categoryFilter" class="select">
+              <option value="">All categories</option>
+            </select>
+            <select id="availFilter" class="select">
+              <option value="">All availability</option>
+              <option value="in">In stock</option>
+              <option value="out">Out of stock</option>
+            </select>
+          </div>
+          <div class="right">
+            <button class="btn primary" onclick="openModal()">+ Add Product</button>
+          </div>
         </div>
-        <div class="right">
-          <button class="btn primary" onclick="openModal()">+ Add Product</button>
+
+        <div class="card">
+          <table id="productsTable">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
         </div>
       </div>
 
-      <div class="card">
-        <table id="table">
-          <thead>
-            <tr>
-              <th>Product</th>
-              <th>Price</th>
-              <th>Stock</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+      <!-- Orders View -->
+      <div id="ordersView" style="display: none;">
+        <div class="toolbar">
+          <div class="left">
+            <h1>Orders</h1>
+            <input id="orderSearch" type="text" class="search-input" placeholder="Search orders...">
+            <select id="statusFilter" class="select">
+              <option value="">All statuses</option>
+              <option value="new">New</option>
+              <option value="accepted">Accepted</option>
+              <option value="preparing">Preparing</option>
+              <option value="out_for_delivery">Out for Delivery</option>
+              <option value="delivered">Delivered</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+          <div class="right">
+            <button class="btn" onclick="refreshOrders()">🔄 Refresh Orders</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <table id="ordersTable">
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Customer</th>
+                <th>Items</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
     </div>
     
@@ -498,39 +546,51 @@
     <script>
 const api = '/api/admin/products';
 let _allProducts = [];
+let _allOrders = [];
 let currentEditId = null;
+let currentView = 'products';
 
 async function refresh() {
-  try {
-    const res = await fetch('/api/admin/products');
-    const data = await res.json();
-    _allProducts = data;
-    populateCategoryOptions(data);
-    updateStats(data);
-    render();
-  } catch (error) {
-    console.error('Failed to fetch products:', error);
-    toast('Error loading products');
+  if (currentView === 'products') {
+    try {
+      const res = await fetch('/api/admin/products');
+      const data = await res.json();
+      _allProducts = data;
+      populateCategoryOptions(data);
+      updateStats(data);
+      render();
+    } catch (error) {
+      console.error('Failed to fetch products:', error);
+      toast('Error loading products');
+    }
+  } else if (currentView === 'orders') {
+    refreshOrders();
   }
 }
 
-function updateStats(products) {
-  document.getElementById('productCount').textContent = products.length;
-  document.getElementById('activeProducts').textContent = products.filter(p => p.active).length;
+function updateStats(products = null) {
+  if (products) {
+    document.getElementById('productCount').textContent = products.length;
+    document.getElementById('activeProducts').textContent = products.filter(p => p.active).length;
+  }
   
   // Update order count
-  fetch('/api/admin/orders')
-    .then(res => res.json())
-    .then(orders => {
-      document.getElementById('orderCount').textContent = orders.length;
-    })
-    .catch(() => {
-      document.getElementById('orderCount').textContent = '-';
-    });
+  if (_allOrders.length > 0) {
+    document.getElementById('orderCount').textContent = _allOrders.length;
+  } else {
+    fetch('/api/admin/orders')
+      .then(res => res.json())
+      .then(orders => {
+        document.getElementById('orderCount').textContent = orders.length;
+      })
+      .catch(() => {
+        document.getElementById('orderCount').textContent = '-';
+      });
+  }
 }
 
 function render() {
-  const tbody = document.querySelector('#table tbody');
+  const tbody = document.querySelector('#productsTable tbody');
   tbody.innerHTML = '';
   const q = (document.getElementById('search').value || '').toLowerCase();
   const cat = document.getElementById('categoryFilter').value;
@@ -731,10 +791,156 @@ document.addEventListener('DOMContentLoaded', function() {
   refresh();
 });
 
+// Navigation functions
+function showProducts() {
+  currentView = 'products';
+  document.getElementById('productsView').style.display = 'block';
+  document.getElementById('ordersView').style.display = 'none';
+  refresh();
+}
+
+function showOrders() {
+  currentView = 'orders';
+  document.getElementById('productsView').style.display = 'none';
+  document.getElementById('ordersView').style.display = 'block';
+  refreshOrders();
+}
+
+// Orders functions
+async function refreshOrders() {
+  try {
+    const res = await fetch('/api/admin/orders');
+    const data = await res.json();
+    _allOrders = data;
+    updateStats();
+    renderOrders();
+  } catch (error) {
+    console.error('Failed to fetch orders:', error);
+    toast('Error loading orders');
+  }
+}
+
+function renderOrders() {
+  const tbody = document.querySelector('#ordersTable tbody');
+  tbody.innerHTML = '';
+  const q = (document.getElementById('orderSearch').value || '').toLowerCase();
+  const status = document.getElementById('statusFilter').value;
+  
+  const data = _allOrders.filter(o => {
+    const inText = (o.id + ' ' + (o.customer?.name || '') + ' ' + (o.customer?.phone || '')).toLowerCase().includes(q);
+    const inStatus = !status || o.status === status;
+    return inText && inStatus;
+  });
+  
+  for (const order of data) {
+    const tr = document.createElement('tr');
+    const itemsText = order.items?.map(item => `${item.qty}x ${item.name}`).join(', ') || 'No items';
+    const date = new Date(order.createdAt).toLocaleDateString();
+    const time = new Date(order.createdAt).toLocaleTimeString();
+    
+    tr.innerHTML = `
+      <td>
+        <strong>${order.id.substring(0, 8)}...</strong>
+        <div class="hint">${time}</div>
+      </td>
+      <td>
+        <strong>${order.customer?.name || 'Unknown'}</strong>
+        <div class="hint">${order.customer?.phone || 'No phone'}</div>
+      </td>
+      <td>
+        <div style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">
+          ${itemsText}
+        </div>
+      </td>
+      <td>
+        <strong>£${order.total}</strong>
+      </td>
+      <td>
+        <select onchange="updateOrderStatus('${order.id}', this.value)" style="padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; background: var(--card); color: var(--text);">
+          <option value="new" ${order.status === 'new' ? 'selected' : ''}>New</option>
+          <option value="accepted" ${order.status === 'accepted' ? 'selected' : ''}>Accepted</option>
+          <option value="preparing" ${order.status === 'preparing' ? 'selected' : ''}>Preparing</option>
+          <option value="out_for_delivery" ${order.status === 'out_for_delivery' ? 'selected' : ''}>Out for Delivery</option>
+          <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>Delivered</option>
+          <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+        </select>
+      </td>
+      <td>
+        ${date}
+      </td>
+      <td>
+        <button class="btn" onclick="viewOrderDetails('${order.id}')" style="font-size: 11px; padding: 4px 8px;">View</button>
+        <button class="btn" onclick="deleteOrder('${order.id}')" style="background: #dc2626; color: white; border-color: #dc2626; font-size: 11px; padding: 4px 8px;">Delete</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  }
+}
+
+async function updateOrderStatus(orderId, newStatus) {
+  try {
+    const res = await fetch(`/api/admin/orders/${orderId}`, {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ status: newStatus })
+    });
+    if (!res.ok) throw new Error('Update failed');
+    toast(`Order status updated to ${newStatus}`);
+    refreshOrders();
+  } catch (e) {
+    console.error(e);
+    toast('Error updating order status');
+  }
+}
+
+function viewOrderDetails(orderId) {
+  const order = _allOrders.find(o => o.id === orderId);
+  if (!order) return;
+  
+  const itemsList = order.items?.map(item => 
+    `• ${item.qty}x ${item.name} - £${item.price} each`
+  ).join('\n') || 'No items';
+  
+  const address = order.address ? 
+    `${order.address.line1}\n${order.address.line2}\n${order.address.city} ${order.address.postcode}` : 
+    'No address';
+  
+  alert(`Order Details: ${orderId}
+
+Customer: ${order.customer?.name || 'Unknown'}
+Phone: ${order.customer?.phone || 'Not provided'}
+
+Address:
+${address}
+
+Items:
+${itemsList}
+
+Total: £${order.total}
+Status: ${order.status}
+Notes: ${order.notes || 'None'}
+Created: ${new Date(order.createdAt).toLocaleString()}`);
+}
+
+async function deleteOrder(orderId) {
+  if (!confirm('Delete this order? This cannot be undone.')) return;
+  try {
+    const res = await fetch(`/api/admin/orders/${orderId}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Delete failed');
+    toast('Order deleted');
+    refreshOrders();
+  } catch (e) {
+    console.error(e);
+    toast('Error deleting order');
+  }
+}
+
 // Event listeners
 document.getElementById('search').addEventListener('input', render);
 document.getElementById('categoryFilter').addEventListener('change', render);
 document.getElementById('availFilter').addEventListener('change', render);
+document.getElementById('orderSearch').addEventListener('input', renderOrders);
+document.getElementById('statusFilter').addEventListener('change', renderOrders);
     </script>
   </body>
 </html>
