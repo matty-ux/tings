@@ -10,7 +10,7 @@ const port = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+// Static files will be served after custom routes
 
 // Persistence setup
 const __filename = fileURLToPath(import.meta.url);
@@ -409,9 +409,15 @@ app.get('/test-admin', (req, res) => {
   res.send('<h1>Admin Test Route Working!</h1><p>If you can see this, routing is working.</p>');
 });
 
-// Admin UI - serve the HTML directly
+// Admin UI - serve the new admin panel
 app.get('/admin', (req, res) => {
   console.log('Admin route accessed');
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+// Keep the old admin route as backup
+app.get('/admin-old', (req, res) => {
+  console.log('Old admin route accessed');
   res.send(`
 <!doctype html>
 <html>
@@ -578,6 +584,9 @@ function generateToken(userId) {
 }
 
 // Duplicate admin routes removed - using the ones defined earlier
+
+// Serve static files after custom routes
+app.use(express.static('public'));
 
 import os from 'os';
 
