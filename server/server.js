@@ -406,12 +406,24 @@ app.get('/health', (req, res) => {
 
 // Admin UI
 app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  console.log('Admin route accessed, serving index.html from:', path.join(__dirname, 'public', 'index.html'));
+  try {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  } catch (error) {
+    console.error('Error serving admin file:', error);
+    res.status(500).send('Error loading admin panel');
+  }
 });
 
 // Catch-all route for admin panel (handle client-side routing)
 app.get('/admin/*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  console.log('Admin catch-all route accessed');
+  try {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  } catch (error) {
+    console.error('Error serving admin file:', error);
+    res.status(500).send('Error loading admin panel');
+  }
 });
 
 // ===== USER AUTHENTICATION ROUTES =====
