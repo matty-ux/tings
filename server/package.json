@@ -1,0 +1,17 @@
+{
+  "name": "vend-gb-admin-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "NODE_ENV=development node server.js",
+    "build": "echo 'No build step required for Node.js'",
+    "deploy": "echo 'Deploy to your preferred cloud platform'"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "nanoid": "^5.0.7"
+  }
+}
