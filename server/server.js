@@ -409,6 +409,11 @@ app.get('/admin', (req, res) => {
   res.sendFile(new URL('./public/index.html', import.meta.url).pathname);
 });
 
+// Catch-all route for admin panel (handle client-side routing)
+app.get('/admin/*', (req, res) => {
+  res.sendFile(new URL('./public/index.html', import.meta.url).pathname);
+});
+
 // ===== USER AUTHENTICATION ROUTES =====
 
 // User registration/login
@@ -504,104 +509,7 @@ function generateToken(userId) {
   return `token_${userId}_${Date.now()}`;
 }
 
-// ===== ADMIN ROUTES (NO AUTH) =====
-
-// Admin routes - no authentication required
-app.get('/api/admin/products', (req, res) => {
-  res.json(products);
-});
-
-app.post('/api/admin/products', (req, res) => {
-  const { name, shortDesc, fullDesc, category, tags, price, salePrice, imageUrl, images, costPrice, taxRate, available, stockQty, maxOrderQty, prepTimeMins, active, sortOrder } = req.body || {};
-  if (!name || typeof price !== 'number') {
-    return res.status(400).json({ error: 'Name and price required' });
-  }
-  const product = {
-    id: nanoid(),
-    sku: `SKU-${Date.now()}`,
-    name, shortDesc: shortDesc || '', fullDesc: fullDesc || '', category: category || '', tags: Array.isArray(tags) ? tags : [],
-    price: +price, salePrice: salePrice ? +salePrice : null, taxRate: +taxRate || 0,
-    imageUrl: imageUrl || '', images: Array.isArray(images) ? images : [],
-    costPrice: +costPrice || 0, available: Boolean(available), stockQty: +stockQty || 0, maxOrderQty: +maxOrderQty || 0, prepTimeMins: +prepTimeMins || 0,
-    active: Boolean(active), sortOrder: +sortOrder || 0,
-    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
-  };
-  products.push(product);
-  saveProducts(products);
-  res.status(201).json(product);
-});
-
-app.put('/api/admin/products/:id', (req, res) => {
-  const { id } = req.params;
-  const idx = products.findIndex(p => p.id === id);
-  if (idx === -1) return res.status(404).json({ error: 'Not found' });
-  const { name, shortDesc, fullDesc, category, tags, price, salePrice, imageUrl, images, costPrice, taxRate, available, stockQty, maxOrderQty, prepTimeMins, active, sortOrder } = req.body || {};
-  const updated = {
-    ...products[idx],
-    ...(name !== undefined ? { name } : {}),
-    ...(shortDesc !== undefined ? { shortDesc } : {}),
-    ...(fullDesc !== undefined ? { fullDesc } : {}),
-    ...(category !== undefined ? { category } : {}),
-    ...(tags !== undefined ? { tags: Array.isArray(tags) ? tags : [] } : {}),
-    ...(price !== undefined ? { price: +price } : {}),
-    ...(salePrice !== undefined ? { salePrice: salePrice ? +salePrice : null } : {}),
-    ...(imageUrl !== undefined ? { imageUrl } : {}),
-    ...(images !== undefined ? { images: Array.isArray(images) ? images : [] } : {}),
-    ...(costPrice !== undefined ? { costPrice: +costPrice } : {}),
-    ...(taxRate !== undefined ? { taxRate: +taxRate } : {}),
-    ...(available !== undefined ? { available: Boolean(available) } : {}),
-    ...(stockQty !== undefined ? { stockQty: +stockQty } : {}),
-    ...(maxOrderQty !== undefined ? { maxOrderQty: +maxOrderQty } : {}),
-    ...(prepTimeMins !== undefined ? { prepTimeMins: +prepTimeMins } : {}),
-    ...(active !== undefined ? { active: Boolean(active) } : {}),
-    ...(sortOrder !== undefined ? { sortOrder: +sortOrder } : {}),
-    updatedAt: new Date().toISOString()
-  };
-  products[idx] = updated;
-  saveProducts(products);
-  res.json(updated);
-});
-
-app.delete('/api/admin/products/:id', (req, res) => {
-  const { id } = req.params;
-  const before = products.length;
-  products = products.filter(p => p.id !== id);
-  if (products.length === before) return res.status(404).json({ error: 'Not found' });
-  saveProducts(products);
-  res.status(204).send();
-});
-
-app.get('/api/admin/orders', (req, res) => {
-  res.json(orders);
-});
-
-app.put('/api/admin/orders/:id', (req, res) => {
-  const { id } = req.params;
-  const { status, customer, address, items, notes } = req.body || {};
-  const idx = orders.findIndex(o => o.id === id);
-  if (idx === -1) return res.status(404).json({ error: 'Not found' });
-  const updated = {
-    ...orders[idx],
-    ...(status !== undefined ? { status } : {}),
-    ...(customer !== undefined ? { customer } : {}),
-    ...(address !== undefined ? { address } : {}),
-    ...(items !== undefined ? { items } : {}),
-    ...(notes !== undefined ? { notes } : {}),
-  };
-  updated.total = +(updated.items.reduce((s,i)=>s + (i.qty||0)*(i.price||0), 0)).toFixed(2);
-  orders[idx] = updated;
-  saveOrders(orders);
-  res.json(orders[idx]);
-});
-
-app.delete('/api/admin/orders/:id', (req, res) => {
-  const { id } = req.params;
-  const before = orders.length;
-  orders = orders.filter(o => o.id !== id);
-  if (orders.length === before) return res.status(404).json({ error: 'Not found' });
-  saveOrders(orders);
-  res.status(204).send();
-});
+// Duplicate admin routes removed - using the ones defined earlier
 
 import os from 'os';
 
