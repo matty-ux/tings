@@ -404,26 +404,82 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Admin UI
-app.get('/admin', (req, res) => {
-  console.log('Admin route accessed, serving index.html from:', path.join(__dirname, 'public', 'index.html'));
-  try {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-  } catch (error) {
-    console.error('Error serving admin file:', error);
-    res.status(500).send('Error loading admin panel');
-  }
+// Test route to check if routing is working
+app.get('/test-admin', (req, res) => {
+  res.send('<h1>Admin Test Route Working!</h1><p>If you can see this, routing is working.</p>');
 });
 
-// Catch-all route for admin panel (handle client-side routing)
-app.get('/admin/*', (req, res) => {
-  console.log('Admin catch-all route accessed');
-  try {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-  } catch (error) {
-    console.error('Error serving admin file:', error);
-    res.status(500).send('Error loading admin panel');
-  }
+// Admin UI - serve the HTML directly
+app.get('/admin', (req, res) => {
+  console.log('Admin route accessed');
+  res.send(`
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Vend GB Admin</title>
+    <style>
+      body { font-family: -apple-system, system-ui, Helvetica, Arial, sans-serif; margin: 40px; background: #f7f9fc; color: #0f172a; }
+      .container { max-width: 1100px; margin: 0 auto; }
+      h1 { color: #0f62fe; }
+      .card { background: white; border-radius: 14px; padding: 24px; box-shadow: 0 6px 20px rgba(0,0,0,0.04); margin: 20px 0; }
+      .btn { padding: 12px 24px; border-radius: 10px; border: 1px solid #e5e7eb; background: #0f62fe; color: white; cursor: pointer; text-decoration: none; display: inline-block; margin: 8px; }
+      .btn:hover { background: #0043ce; }
+      .status { padding: 8px 16px; background: #e5f4ea; color: #256c2d; border-radius: 6px; display: inline-block; margin: 10px 0; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🛠️ Vend GB Admin Panel</h1>
+      <div class="status">✅ Admin panel is working!</div>
+      
+      <div class="card">
+        <h2>Quick Actions</h2>
+        <a href="/api/products" class="btn">View Products API</a>
+        <a href="/api/admin/orders" class="btn">View Orders API</a>
+        <a href="/health" class="btn">Health Check</a>
+      </div>
+      
+      <div class="card">
+        <h2>Server Status</h2>
+        <p><strong>Server:</strong> Running on Railway</p>
+        <p><strong>Environment:</strong> ${process.env.NODE_ENV || 'production'}</p>
+        <p><strong>Uptime:</strong> ${Math.floor(process.uptime())} seconds</p>
+      </div>
+      
+      <div class="card">
+        <h2>API Endpoints</h2>
+        <ul>
+          <li><code>GET /api/products</code> - Public products API</li>
+          <li><code>GET /api/admin/products</code> - Admin products API</li>
+          <li><code>POST /api/admin/products</code> - Create product</li>
+          <li><code>PUT /api/admin/products/:id</code> - Update product</li>
+          <li><code>DELETE /api/admin/products/:id</code> - Delete product</li>
+          <li><code>GET /api/admin/orders</code> - View orders</li>
+          <li><code>POST /api/checkout</code> - Create order</li>
+        </ul>
+      </div>
+    </div>
+    
+    <script>
+      // Simple admin functionality
+      async function loadProducts() {
+        try {
+          const response = await fetch('/api/admin/products');
+          const products = await response.json();
+          console.log('Products loaded:', products.length);
+        } catch (error) {
+          console.error('Error loading products:', error);
+        }
+      }
+      
+      // Load products on page load
+      loadProducts();
+    </script>
+  </body>
+</html>
+  `);
 });
 
 // ===== USER AUTHENTICATION ROUTES =====
