@@ -1,0 +1,29 @@
+{
+  "name": "vend-gb",
+  "version": "1.0.0",
+  "description": "Pizza ordering system with Express.js server and iOS app",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "cd server && npm start",
+    "build": "cd server && npm ci --only=production",
+    "dev": "cd server && npm run dev",
+    "install-deps": "cd server && npm install"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YOUR_USERNAME/Vend-GB.git"
+  },
+  "keywords": [
+    "pizza",
+    "ordering",
+    "express",
+    "nodejs",
+    "ios",
+    "admin"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}

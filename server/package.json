@@ -7,11 +7,15 @@
     "start": "node server.js",
     "dev": "NODE_ENV=development node server.js",
     "build": "echo 'No build step required for Node.js'",
-    "deploy": "echo 'Deploy to your preferred cloud platform'"
+    "deploy": "echo 'Deploy to your preferred cloud platform'",
+    "postinstall": "echo 'Dependencies installed successfully'"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.19.2",
     "nanoid": "^5.0.7"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
