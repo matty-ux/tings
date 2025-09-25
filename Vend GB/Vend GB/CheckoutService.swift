@@ -27,6 +27,20 @@ struct Address: Codable {
     let postcode: String
 }
 
+struct OrderResponse: Codable {
+    let id: String
+    let customerName: String
+    let customerPhone: String
+    let customerEmail: String
+    let items: [CheckoutItem]
+    let total: Double
+    let status: String
+    let deliveryAddress: String
+    let specialInstructions: String
+    let createdAt: String
+    let updatedAt: String
+}
+
 final class CheckoutService {
     static let shared = CheckoutService()
     private init() {}
@@ -50,7 +64,7 @@ final class CheckoutService {
             print("HTTP error:", http.statusCode)
             throw URLError(.badServerResponse)
         }
-        let result = try JSONDecoder().decode([String:String].self, from: data)
-        return result["id"] ?? ""
+        let result = try JSONDecoder().decode(OrderResponse.self, from: data)
+        return result.id
     }
 }
