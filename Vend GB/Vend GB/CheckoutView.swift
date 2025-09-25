@@ -139,7 +139,7 @@ struct CheckoutView: View {
                             Image(systemName: "creditcard.fill")
                                 .font(.system(size: 16))
                         }
-                        Text(isSubmitting ? "Placing Order..." : "Place Order")
+                        Text(isSubmitting ? "Preparing..." : "Pay with Card")
                             .font(.system(size: 16, weight: .semibold))
                     }
                     .foregroundColor(.white)
