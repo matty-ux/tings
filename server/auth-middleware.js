@@ -7,11 +7,13 @@ import { auth0Config, auth0StrategyConfig } from './auth-config.js';
 export const sessionConfig = {
   secret: auth0Config.sessionSecret,
   resave: false,
-  saveUninitialized: false,
+  saveUninitialized: true, // Changed to true to save session even if not modified
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+    secure: false, // Set to false for Railway - they handle SSL termination
+    httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  }
+  },
+  name: 'vendgb.sid' // Custom session name to avoid conflicts
 };
 
 // Configure Passport
@@ -37,13 +39,14 @@ export function configurePassport() {
     auth0StrategyConfig,
     (accessToken, refreshToken, extraParams, profile, done) => {
       console.log('✅ Auth0 authentication successful for user:', profile.id);
+      console.log('User email:', profile.emails?.[0]?.value);
+      console.log('User name:', profile.displayName);
       console.log('User organizations:', extraParams.organization_memberships || 'None');
+      console.log('Access token received:', !!accessToken);
       
-      // Optional: Check if user belongs to required organization
-      // const requiredOrg = process.env.AUTH0_REQUIRED_ORG;
-      // if (requiredOrg && !extraParams.organization_memberships?.includes(requiredOrg)) {
-      //   return done(new Error('User not in required organization'));
-      // }
+      // Store additional user info in profile
+      profile.accessToken = accessToken;
+      profile.refreshToken = refreshToken;
       
       return done(null, profile);
     }
@@ -53,11 +56,13 @@ export function configurePassport() {
 
   // Serialize user for session
   passport.serializeUser((user, done) => {
+    console.log('📦 Serializing user for session:', user.id);
     done(null, user);
   });
 
   // Deserialize user from session
   passport.deserializeUser((user, done) => {
+    console.log('📤 Deserializing user from session:', user?.id || 'No user');
     done(null, user);
   });
 }
