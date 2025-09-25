@@ -6,8 +6,6 @@
   "scripts": {
     "start": "node server.js",
     "dev": "NODE_ENV=development node server.js",
-    "build": "echo 'No build step required for Node.js'",
-    "deploy": "echo 'Deploy to your preferred cloud platform'",
     "postinstall": "echo 'Dependencies installed successfully'"
   },
   "dependencies": {
@@ -16,7 +14,6 @@
     "nanoid": "^5.0.7",
     "pg": "^8.11.3",
     "stripe": "^14.21.0",
-    "express-oauth-server": "^2.0.0",
     "express-session": "^1.17.3",
     "passport": "^0.7.0",
     "passport-auth0": "^1.4.1"
