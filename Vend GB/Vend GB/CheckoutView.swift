@@ -10,6 +10,8 @@ struct CheckoutView: View {
     @State private var postcode: String = ""
     @State private var isSubmitting: Bool = false
     @State private var resultMessage: String?
+    @State private var showingPaymentSheet = false
+    @State private var pendingOrderRequest: OrderRequest?
 
     var body: some View {
         ScrollView {
@@ -126,7 +128,7 @@ struct CheckoutView: View {
                 
                 // Place Order Button
                 Button(action: {
-                    Task { await submit() }
+                    Task { await prepareOrder() }
                 }) {
                     HStack {
                         if isSubmitting {
@@ -134,10 +136,10 @@ struct CheckoutView: View {
                                 .scaleEffect(0.8)
                                 .foregroundColor(.white)
                         } else {
-                            Image(systemName: "checkmark.circle.fill")
+                            Image(systemName: "creditcard.fill")
                                 .font(.system(size: 16))
                         }
-                        Text(isSubmitting ? "Placing Order..." : "Place Order")
+                        Text(isSubmitting ? "Preparing..." : "Pay with Card")
                             .font(.system(size: 16, weight: .semibold))
                     }
                     .foregroundColor(.white)
@@ -161,27 +163,64 @@ struct CheckoutView: View {
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Checkout")
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showingPaymentSheet) {
+            if let orderRequest = pendingOrderRequest {
+                PaymentSheet(isPresented: $showingPaymentSheet, orderRequest: $pendingOrderRequest)
+                    .onDisappear {
+                        // Handle payment completion
+                        if let result = PaymentService.shared.paymentResult {
+                            switch result {
+                            case .success(let orderId):
+                                resultMessage = "Order placed: #\(orderId.suffix(6))"
+                                cart.clear()
+                            case .failure(let error):
+                                resultMessage = "Payment failed: \(error)"
+                            }
+                        }
+                    }
+            }
+        }
     }
 
-    private func submit() async {
+    private func prepareOrder() async {
         isSubmitting = true
         defer { isSubmitting = false }
+        
         let items = cart.items.map { CheckoutItem(productId: $0.product.id, qty: $0.quantity) }
-        let req = CheckoutRequest(
-            customer: Customer(name: name, phone: phone.isEmpty ? nil : phone),
-            address: Address(line1: line1, line2: line2.isEmpty ? nil : line2, city: city, postcode: postcode),
+        
+        // First, create the order on the server
+        let deliveryAddress = "\(line1)\(line2.isEmpty ? "" : ", \(line2)"), \(city), \(postcode)"
+        let checkoutRequest = CheckoutRequest(
+            customerName: name,
+            customerPhone: phone.isEmpty ? nil : phone,
+            customerEmail: nil,
             items: items,
-            notes: nil
+            total: cart.total,
+            deliveryAddress: deliveryAddress,
+            specialInstructions: nil
         )
+        
         do {
-            let orderId = try await CheckoutService.shared.checkout(request: req)
+            // Create order without payment
+            let orderId = try await CheckoutService.shared.checkout(request: checkoutRequest)
+            
+            // Create OrderRequest for payment
+            let orderRequest = OrderRequest(
+                id: orderId,
+                total: cart.total,
+                items: items,
+                customer: Customer(name: checkoutRequest.customerName, phone: checkoutRequest.customerPhone),
+                address: Address(line1: line1, line2: line2.isEmpty ? nil : line2, city: city, postcode: postcode)
+            )
+            
             await MainActor.run {
-                resultMessage = "Order placed: #\(orderId.suffix(6))"
-                cart.clear()
+                pendingOrderRequest = orderRequest
+                showingPaymentSheet = true
             }
+            
         } catch {
             await MainActor.run {
-                resultMessage = "Checkout failed"
+                resultMessage = "Failed to prepare order: \(error.localizedDescription)"
             }
         }
     }

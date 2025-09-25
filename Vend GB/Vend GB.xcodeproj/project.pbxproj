@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		DDF369182E858D4600948F3D /* Stripe in Frameworks */ = {isa = PBXBuildFile; productRef = DDF369172E858D4600948F3D /* Stripe */; };
+		DDF3691A2E858D4600948F3D /* StripeApplePay in Frameworks */ = {isa = PBXBuildFile; productRef = DDF369192E858D4600948F3D /* StripeApplePay */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		DDF963CE2E79AD3200BF967B /* Vend GB.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Vend GB.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +28,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DDF369182E858D4600948F3D /* Stripe in Frameworks */,
+				DDF3691A2E858D4600948F3D /* StripeApplePay in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +72,8 @@
 			);
 			name = "Vend GB";
 			packageProductDependencies = (
+				DDF369172E858D4600948F3D /* Stripe */,
+				DDF369192E858D4600948F3D /* StripeApplePay */,
 			);
 			productName = "Vend GB";
 			productReference = DDF963CE2E79AD3200BF967B /* Vend GB.app */;
@@ -94,6 +103,9 @@
 			);
 			mainGroup = DDF963C52E79AD3200BF967B;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				DDF369162E858D1800948F3D /* XCRemoteSwiftPackageReference "stripe-ios" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = DDF963CF2E79AD3200BF967B /* Products */;
 			projectDirPath = "";
@@ -324,6 +336,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		DDF369162E858D1800948F3D /* XCRemoteSwiftPackageReference "stripe-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/stripe/stripe-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 24.24.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		DDF369172E858D4600948F3D /* Stripe */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DDF369162E858D1800948F3D /* XCRemoteSwiftPackageReference "stripe-ios" */;
+			productName = Stripe;
+		};
+		DDF369192E858D4600948F3D /* StripeApplePay */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DDF369162E858D1800948F3D /* XCRemoteSwiftPackageReference "stripe-ios" */;
+			productName = StripeApplePay;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = DDF963C62E79AD3200BF967B /* Project object */;
 }
