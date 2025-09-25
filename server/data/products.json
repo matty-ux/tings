@@ -20,7 +20,7 @@
     "active": true,
     "sortOrder": 0,
     "createdAt": "2025-09-19T11:59:16.889Z",
-    "updatedAt": "2025-09-21T16:21:54.056Z"
+    "updatedAt": "2025-09-24T14:48:24.329Z"
   },
   {
     "id": "NcL9B7i2fw6S5GNViYgVY",
@@ -32,17 +32,17 @@
     "tags": [],
     "price": 1000,
     "salePrice": null,
+    "taxRate": 0,
     "imageUrl": "",
     "images": [],
     "costPrice": 0,
     "available": true,
-    "taxRate": 0,
     "stockQty": 0,
     "maxOrderQty": 0,
     "prepTimeMins": 0,
     "active": true,
     "sortOrder": 0,
     "createdAt": "2025-09-21T20:47:39.269Z",
-    "updatedAt": "2025-09-21T20:47:39.269Z"
+    "updatedAt": "2025-09-24T14:48:24.332Z"
   }
 ]
