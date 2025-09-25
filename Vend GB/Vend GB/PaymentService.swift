@@ -154,14 +154,14 @@ struct OrderRequest {
 struct PaymentIntent {
     let id: String
     let clientSecret: String
-    let amount: Int
+    let amount: Double
     let currency: String
 }
 
 struct PaymentIntentResponse: Codable {
     let clientSecret: String
     let paymentIntentId: String
-    let amount: Int
+    let amount: Double
     let currency: String
 }
 
