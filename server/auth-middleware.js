@@ -16,6 +16,11 @@ export const sessionConfig = {
 
 // Configure Passport
 export function configurePassport() {
+  console.log('🔧 Configuring Auth0 strategy with:');
+  console.log('   Domain:', auth0StrategyConfig.domain);
+  console.log('   Client ID:', auth0StrategyConfig.clientID);
+  console.log('   Callback URL:', auth0StrategyConfig.callbackURL);
+  
   // Auth0 Strategy
   const strategy = new Auth0Strategy(
     auth0StrategyConfig,
