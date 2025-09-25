@@ -355,6 +355,7 @@
         <h3>Navigation</h3>
         <button class="btn" onclick="showProducts()">📦 Products</button>
         <button class="btn" onclick="showOrders()">📋 Orders</button>
+        <button class="btn" onclick="showAccount()">👤 Account</button>
       </div>
       
       <div class="server-info">
@@ -448,6 +449,78 @@
             </thead>
             <tbody></tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- Account View -->
+      <div id="accountView" style="display: none;">
+        <div class="toolbar">
+          <div class="left">
+            <h1>Account Settings</h1>
+          </div>
+          <div class="right">
+            <button class="btn" onclick="refresh()">🔄 Refresh</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>👤 User Account</h2>
+          <p class="hint" style="margin-bottom: 20px;">Account management features coming soon. For now, you can manage your theme preferences.</p>
+          
+          <div style="margin-bottom: 20px;">
+            <h3>Theme Preferences</h3>
+            <p style="margin-bottom: 12px;">Choose your preferred theme for the admin dashboard:</p>
+            <button class="btn primary" onclick="toggleTheme()" style="width: auto; margin-right: 10px;">
+              <span id="themeIcon">🌙</span> Toggle Theme
+            </button>
+            <span id="currentTheme" class="hint">Current: Light Mode</span>
+          </div>
+
+          <div style="margin-bottom: 20px;">
+            <h3>Account Information</h3>
+            <div style="background: var(--soft); padding: 16px; border-radius: 8px; border: 1px solid var(--border);">
+              <p><strong>Status:</strong> <span class="badge" style="background: #fee2e2; color: #dc2626;">Guest Access</span></p>
+              <p><strong>Permissions:</strong> Full Admin Access</p>
+              <p><strong>Login Method:</strong> Direct Access (No Authentication Required)</p>
+              <p><strong>Last Active:</strong> <span id="lastActive">Just now</span></p>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 20px;">
+            <h3>Security Settings</h3>
+            <div style="background: var(--soft); padding: 16px; border-radius: 8px; border: 1px solid var(--border);">
+              <p><strong>Authentication:</strong> <span class="badge" style="background: #fef3c7; color: #d97706;">Disabled</span></p>
+              <p><strong>Two-Factor Auth:</strong> <span class="badge" style="background: #fef3c7; color: #d97706;">Not Available</span></p>
+              <p><strong>Session Management:</strong> <span class="badge" style="background: #fef3c7; color: #d97706;">Not Implemented</span></p>
+              <p class="hint" style="margin-top: 8px;">User authentication will be implemented in a future update.</p>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 20px;">
+            <h3>Account Actions</h3>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button class="btn" onclick="exportData()" style="width: auto;">
+                📥 Export Data
+              </button>
+              <button class="btn" onclick="viewLogs()" style="width: auto;">
+                📋 View Logs
+              </button>
+              <button class="btn" onclick="clearCache()" style="width: auto;">
+                🗑️ Clear Cache
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <h3>System Information</h3>
+            <div style="background: var(--soft); padding: 16px; border-radius: 8px; border: 1px solid var(--border);">
+              <p><strong>Server Version:</strong> 1.0.0</p>
+              <p><strong>Database:</strong> JSON File Storage</p>
+              <p><strong>Environment:</strong> <span id="accountEnvironment">production</span></p>
+              <p><strong>Last Backup:</strong> <span id="lastBackup">Never</span></p>
+              <p><strong>Storage Used:</strong> <span id="storageUsed">Calculating...</span></p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -565,6 +638,8 @@ async function refresh() {
     }
   } else if (currentView === 'orders') {
     refreshOrders();
+  } else if (currentView === 'account') {
+    updateAccountInfo();
   }
 }
 
@@ -759,9 +834,83 @@ function populateCategoryOptions(data) {
 
 function toggleTheme() {
   const next = (document.documentElement.getAttribute('data-theme') === 'dark') ? '' : 'dark';
-  if (next) document.documentElement.setAttribute('data-theme','dark'); 
-  else document.documentElement.removeAttribute('data-theme');
+  if (next) {
+    document.documentElement.setAttribute('data-theme','dark');
+    document.getElementById('themeIcon').textContent = '☀️';
+    document.getElementById('currentTheme').textContent = 'Current: Dark Mode';
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+    document.getElementById('themeIcon').textContent = '🌙';
+    document.getElementById('currentTheme').textContent = 'Current: Light Mode';
+  }
   localStorage.setItem('theme', next);
+  toast(`Switched to ${next ? 'Dark' : 'Light'} Mode`);
+}
+
+// Account functions
+function updateAccountInfo() {
+  // Update last active time
+  document.getElementById('lastActive').textContent = new Date().toLocaleString();
+  
+  // Update environment
+  document.getElementById('accountEnvironment').textContent = window.location.hostname.includes('railway') ? 'Production' : 'Development';
+  
+  // Update theme display
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.getElementById('themeIcon').textContent = isDark ? '☀️' : '🌙';
+  document.getElementById('currentTheme').textContent = isDark ? 'Current: Dark Mode' : 'Current: Light Mode';
+  
+  // Calculate storage (mock for now)
+  calculateStorageUsage();
+}
+
+function calculateStorageUsage() {
+  // Mock storage calculation
+  const productsCount = _allProducts.length;
+  const ordersCount = _allOrders.length;
+  const estimatedSize = (productsCount * 0.5) + (ordersCount * 2); // KB
+  document.getElementById('storageUsed').textContent = `${estimatedSize.toFixed(1)} KB`;
+}
+
+function exportData() {
+  const data = {
+    products: _allProducts,
+    orders: _allOrders,
+    exportDate: new Date().toISOString(),
+    version: '1.0.0'
+  };
+  
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `vend-gb-data-${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Data exported successfully');
+}
+
+function viewLogs() {
+  // Mock logs view
+  const logs = [
+    { time: new Date().toLocaleString(), level: 'INFO', message: 'Admin dashboard accessed' },
+    { time: new Date(Date.now() - 300000).toLocaleString(), level: 'INFO', message: 'Products refreshed' },
+    { time: new Date(Date.now() - 600000).toLocaleString(), level: 'INFO', message: 'Server health check passed' }
+  ];
+  
+  const logsText = logs.map(log => `[${log.time}] ${log.level}: ${log.message}`).join('\n');
+  alert(`Recent Logs:\n\n${logsText}\n\nNote: This is a mock log view. Real logging will be implemented with user authentication.`);
+}
+
+function clearCache() {
+  if (confirm('Clear local cache? This will reset your theme preferences and any cached data.')) {
+    localStorage.clear();
+    toast('Cache cleared successfully');
+    // Reload page to reset everything
+    setTimeout(() => window.location.reload(), 1000);
+  }
 }
 
 function toast(msg) {
@@ -796,6 +945,7 @@ function showProducts() {
   currentView = 'products';
   document.getElementById('productsView').style.display = 'block';
   document.getElementById('ordersView').style.display = 'none';
+  document.getElementById('accountView').style.display = 'none';
   refresh();
 }
 
@@ -803,7 +953,16 @@ function showOrders() {
   currentView = 'orders';
   document.getElementById('productsView').style.display = 'none';
   document.getElementById('ordersView').style.display = 'block';
+  document.getElementById('accountView').style.display = 'none';
   refreshOrders();
+}
+
+function showAccount() {
+  currentView = 'account';
+  document.getElementById('productsView').style.display = 'none';
+  document.getElementById('ordersView').style.display = 'none';
+  document.getElementById('accountView').style.display = 'block';
+  updateAccountInfo();
 }
 
 // Orders functions
