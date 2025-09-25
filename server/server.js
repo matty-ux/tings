@@ -155,9 +155,26 @@ app.get('/auth/auth0', (req, res, next) => {
 });
 
 // Auth0 callback route
-app.get('/callback', passport.authenticate('auth0', {
-  failureRedirect: '/login?error=auth_failed'
-}), (req, res) => {
+app.get('/callback', (req, res, next) => {
+  console.log('🔄 Auth0 callback received');
+  console.log('Query params:', req.query);
+  
+  // Check for Auth0 errors
+  if (req.query.error) {
+    console.error('❌ Auth0 callback error:', req.query.error);
+    console.error('Error description:', req.query.error_description);
+    return res.status(400).send(`
+      <h1>Authentication Error</h1>
+      <p><strong>Error:</strong> ${req.query.error}</p>
+      <p><strong>Description:</strong> ${decodeURIComponent(req.query.error_description || 'No description')}</p>
+      <p><a href="/login">Try again</a></p>
+    `);
+  }
+  
+  passport.authenticate('auth0', {
+    failureRedirect: '/login?error=auth_failed'
+  })(req, res, next);
+}, (req, res) => {
   console.log('✅ Auth0 callback successful, redirecting to admin');
   console.log('User authenticated:', req.isAuthenticated());
   console.log('User info:', req.user ? { id: req.user.id, email: req.user.emails?.[0]?.value } : 'No user');
