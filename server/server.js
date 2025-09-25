@@ -133,6 +133,22 @@ app.get('/login', (req, res) => {
 app.get('/auth/auth0', (req, res, next) => {
   console.log('🚀 Auth0 authentication route accessed');
   console.log('  - Redirecting to Auth0 for authentication');
+  
+  // Check if Auth0 is properly configured
+  if (!process.env.AUTH0_DOMAIN || !process.env.AUTH0_CLIENT_ID || !process.env.AUTH0_CLIENT_SECRET) {
+    console.error('❌ Auth0 not configured - missing environment variables');
+    return res.status(500).send(`
+      <h1>Auth0 Not Configured</h1>
+      <p>Missing environment variables:</p>
+      <ul>
+        <li>AUTH0_DOMAIN: ${process.env.AUTH0_DOMAIN ? '✅ Set' : '❌ Missing'}</li>
+        <li>AUTH0_CLIENT_ID: ${process.env.AUTH0_CLIENT_ID ? '✅ Set' : '❌ Missing'}</li>
+        <li>AUTH0_CLIENT_SECRET: ${process.env.AUTH0_CLIENT_SECRET ? '✅ Set' : '❌ Missing'}</li>
+      </ul>
+      <p>Please configure these environment variables on Railway.</p>
+    `);
+  }
+  
   passport.authenticate('auth0', {
     scope: 'openid email profile'
   })(req, res, next);
