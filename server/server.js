@@ -4,6 +4,7 @@ import { nanoid } from 'nanoid';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import session from 'express-session';
 import { initializeDatabase, query } from './database.js';
 import stripe, { stripeConfig, priceToPence, penceToPrice } from './stripe-config.js';
 import passport from 'passport';
