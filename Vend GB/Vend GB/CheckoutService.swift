@@ -6,13 +6,10 @@ struct CheckoutItem: Codable {
 }
 
 struct CheckoutRequest: Codable {
-    let customerName: String
-    let customerPhone: String?
-    let customerEmail: String?
+    let customer: Customer
+    let address: Address
     let items: [CheckoutItem]
-    let total: Double
-    let deliveryAddress: String
-    let specialInstructions: String?
+    let notes: String?
 }
 
 struct Customer: Codable {
@@ -32,7 +29,7 @@ final class CheckoutService {
     private init() {}
 
     func checkout(request: CheckoutRequest) async throws -> String {
-        let url = AppConfig.baseURL.appendingPathComponent("/api/orders")
+        let url = AppConfig.baseURL.appendingPathComponent("/api/checkout")
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.addValue("application/json", forHTTPHeaderField: "Content-Type")

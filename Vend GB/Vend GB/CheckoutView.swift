@@ -189,15 +189,11 @@ struct CheckoutView: View {
         let items = cart.items.map { CheckoutItem(productId: $0.product.id, qty: $0.quantity) }
         
         // First, create the order on the server
-        let deliveryAddress = "\(line1)\(line2.isEmpty ? "" : ", \(line2)"), \(city), \(postcode)"
         let checkoutRequest = CheckoutRequest(
-            customerName: name,
-            customerPhone: phone.isEmpty ? nil : phone,
-            customerEmail: nil,
+            customer: Customer(name: name, phone: phone.isEmpty ? nil : phone),
+            address: Address(line1: line1, line2: line2.isEmpty ? nil : line2, city: city, postcode: postcode),
             items: items,
-            total: cart.total,
-            deliveryAddress: deliveryAddress,
-            specialInstructions: nil
+            notes: nil
         )
         
         do {
@@ -209,8 +205,8 @@ struct CheckoutView: View {
                 id: orderId,
                 total: cart.total,
                 items: items,
-                customer: Customer(name: checkoutRequest.customerName, phone: checkoutRequest.customerPhone),
-                address: Address(line1: line1, line2: line2.isEmpty ? nil : line2, city: city, postcode: postcode)
+                customer: checkoutRequest.customer,
+                address: checkoutRequest.address
             )
             
             await MainActor.run {
