@@ -131,6 +131,9 @@ app.get('/auth/auth0', passport.authenticate('auth0', {
 app.get('/callback', passport.authenticate('auth0', {
   failureRedirect: '/login?error=auth_failed'
 }), (req, res) => {
+  console.log('✅ Auth0 callback successful, redirecting to admin');
+  console.log('User authenticated:', req.isAuthenticated());
+  console.log('User info:', req.user ? { id: req.user.id, email: req.user.emails?.[0]?.value } : 'No user');
   res.redirect('/admin');
 });
 
@@ -537,6 +540,8 @@ app.get('/health', (req, res) => {
 // Admin UI - serve the new admin panel (protected)
 app.get('/admin', requireAuthWeb, (req, res) => {
   console.log('Admin route accessed');
+  console.log('User authenticated:', req.isAuthenticated());
+  console.log('User info:', req.userInfo || 'No user info');
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
