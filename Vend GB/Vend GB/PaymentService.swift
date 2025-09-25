@@ -32,11 +32,22 @@ final class PaymentService: ObservableObject {
         
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
         
+        print("Creating payment intent for order: \(order.id), amount: \(order.total)")
+        print("Request URL: \(url.absoluteString)")
+        print("Request body: \(String(data: request.httpBody!, encoding: .utf8) ?? "nil")")
+        
         let (data, response) = try await URLSession.shared.data(for: request)
         
-        guard let httpResponse = response as? HTTPURLResponse,
-              (200..<300).contains(httpResponse.statusCode) else {
-            throw PaymentError.serverError("Failed to create payment intent")
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw PaymentError.serverError("Invalid response type")
+        }
+        
+        print("Payment intent response status: \(httpResponse.statusCode)")
+        print("Payment intent response body: \(String(data: data, encoding: .utf8) ?? "nil")")
+        
+        guard (200..<300).contains(httpResponse.statusCode) else {
+            let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
+            throw PaymentError.serverError("Failed to create payment intent: \(errorMessage)")
         }
         
         let paymentData = try JSONDecoder().decode(PaymentIntentResponse.self, from: data)
