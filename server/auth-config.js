@@ -20,6 +20,8 @@ export function validateAuth0Config() {
   }
   
   console.log('✅ Auth0 configuration validated');
+  console.log('🔗 Callback URL:', auth0Config.callbackURL);
+  console.log('🏠 Base URL:', auth0Config.baseURL);
   return true;
 }
 
