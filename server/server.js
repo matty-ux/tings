@@ -582,11 +582,31 @@ app.post('/api/payment/webhook', express.raw({type: 'application/json'}), async 
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ 
+  res.json({
     status: 'healthy', 
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development'
   });
+});
+
+// Auth0 test endpoint
+app.get('/test-auth0', (req, res) => {
+  const authUrl = `https://${process.env.AUTH0_DOMAIN}/authorize?` +
+    `response_type=code&` +
+    `client_id=${process.env.AUTH0_CLIENT_ID}&` +
+    `redirect_uri=${encodeURIComponent(process.env.AUTH0_CALLBACK_URL || 'https://tings-production.up.railway.app/callback')}&` +
+    `scope=openid%20email%20profile&` +
+    `state=test123`;
+  
+  res.send(`
+    <h1>Auth0 Test</h1>
+    <p><strong>Domain:</strong> ${process.env.AUTH0_DOMAIN}</p>
+    <p><strong>Client ID:</strong> ${process.env.AUTH0_CLIENT_ID}</p>
+    <p><strong>Callback URL:</strong> ${process.env.AUTH0_CALLBACK_URL || 'https://tings-production.up.railway.app/callback'}</p>
+    <p><strong>Generated Auth URL:</strong></p>
+    <p><a href="${authUrl}" target="_blank">${authUrl}</a></p>
+    <p><a href="${authUrl}">Test Auth0 Login</a></p>
+  `);
 });
 
 // Admin UI - serve the new admin panel (protected)
