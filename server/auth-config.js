@@ -1,10 +1,13 @@
 // Auth0 Configuration
+const defaultBaseURL = 'https://tings-production.up.railway.app';
+const baseURL = process.env.BASE_URL || defaultBaseURL;
+
 export const auth0Config = {
   domain: process.env.AUTH0_DOMAIN,
   clientID: process.env.AUTH0_CLIENT_ID,
   clientSecret: process.env.AUTH0_CLIENT_SECRET,
-  callbackURL: process.env.AUTH0_CALLBACK_URL || `${process.env.BASE_URL || 'https://tings-production.up.railway.app'}/callback`,
-  baseURL: process.env.BASE_URL || 'https://tings-production.up.railway.app',
+  callbackURL: process.env.AUTH0_CALLBACK_URL || `${baseURL}/callback`,
+  baseURL: baseURL,
   sessionSecret: process.env.SESSION_SECRET || 'your-session-secret-change-in-production'
 };
 
