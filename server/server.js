@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { initializeDatabase, query } from './database.js';
+import stripe, { stripeConfig, priceToPence, penceToPrice } from './stripe-config.js';
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -96,7 +97,7 @@ app.get('/api/admin/products', async (req, res) => {
     `);
     
     const products = result.rows.map(dbProductToApi);
-    res.json(products);
+  res.json(products);
   } catch (error) {
     console.error('Error fetching products:', error);
     res.status(500).json({ error: 'Failed to fetch products' });
@@ -106,15 +107,15 @@ app.get('/api/admin/products', async (req, res) => {
 // Create new product
 app.post('/api/admin/products', async (req, res) => {
   try {
-    const {
-      sku, name, shortDesc, fullDesc, category, tags,
-      price, salePrice, imageUrl, images, costPrice, available,
-      taxRate, stockQty, maxOrderQty, prepTimeMins, active, sortOrder
-    } = req.body;
+  const {
+    sku, name, shortDesc, fullDesc, category, tags,
+    price, salePrice, imageUrl, images, costPrice, available,
+    taxRate, stockQty, maxOrderQty, prepTimeMins, active, sortOrder
+  } = req.body;
     
-    if (typeof name !== 'string' || typeof price !== 'number') {
-      return res.status(400).json({ error: 'Invalid product payload' });
-    }
+  if (typeof name !== 'string' || typeof price !== 'number') {
+    return res.status(400).json({ error: 'Invalid product payload' });
+  }
     
     const result = await query(`
       INSERT INTO products (
@@ -130,7 +131,7 @@ app.post('/api/admin/products', async (req, res) => {
     ]);
     
     const product = dbProductToApi(result.rows[0]);
-    res.status(201).json(product);
+  res.status(201).json(product);
   } catch (error) {
     console.error('Error creating product:', error);
     res.status(500).json({ error: 'Failed to create product' });
@@ -140,12 +141,12 @@ app.post('/api/admin/products', async (req, res) => {
 // Update product
 app.put('/api/admin/products/:id', async (req, res) => {
   try {
-    const { id } = req.params;
-    const {
-      sku, name, shortDesc, fullDesc, category, tags,
-      price, salePrice, imageUrl, images, costPrice, available,
-      taxRate, stockQty, maxOrderQty, prepTimeMins, active, sortOrder
-    } = req.body;
+  const { id } = req.params;
+  const {
+    sku, name, shortDesc, fullDesc, category, tags,
+    price, salePrice, imageUrl, images, costPrice, available,
+    taxRate, stockQty, maxOrderQty, prepTimeMins, active, sortOrder
+  } = req.body;
     
     const result = await query(`
       UPDATE products SET
@@ -176,7 +177,7 @@ app.put('/api/admin/products/:id', async (req, res) => {
 // Delete product
 app.delete('/api/admin/products/:id', async (req, res) => {
   try {
-    const { id } = req.params;
+  const { id } = req.params;
     
     const result = await query('DELETE FROM products WHERE id = $1 RETURNING *', [id]);
     
@@ -200,7 +201,7 @@ app.get('/api/admin/orders', async (req, res) => {
     `);
     
     const orders = result.rows.map(dbOrderToApi);
-    res.json(orders);
+  res.json(orders);
   } catch (error) {
     console.error('Error fetching orders:', error);
     res.status(500).json({ error: 'Failed to fetch orders' });
@@ -233,7 +234,7 @@ app.post('/api/orders', async (req, res) => {
     ]);
     
     const order = dbOrderToApi(result.rows[0]);
-    res.status(201).json(order);
+  res.status(201).json(order);
   } catch (error) {
     console.error('Error creating order:', error);
     res.status(500).json({ error: 'Failed to create order' });
@@ -243,7 +244,7 @@ app.post('/api/orders', async (req, res) => {
 // Update order status
 app.put('/api/admin/orders/:id/status', async (req, res) => {
   try {
-    const { id } = req.params;
+  const { id } = req.params;
     const { status } = req.body;
     
     const validStatuses = ['new', 'accepted', 'preparing', 'out_for_delivery', 'delivered', 'cancelled'];
@@ -272,7 +273,7 @@ app.put('/api/admin/orders/:id/status', async (req, res) => {
 // Delete order
 app.delete('/api/admin/orders/:id', async (req, res) => {
   try {
-    const { id } = req.params;
+  const { id } = req.params;
     
     const result = await query('DELETE FROM orders WHERE order_id = $1 RETURNING *', [id]);
     
@@ -285,6 +286,161 @@ app.delete('/api/admin/orders/:id', async (req, res) => {
     console.error('Error deleting order:', error);
     res.status(500).json({ error: 'Failed to delete order' });
   }
+});
+
+// ===== STRIPE PAYMENT INTEGRATION =====
+
+// Create payment intent for an order
+app.post('/api/payment/create-intent', async (req, res) => {
+  try {
+    const { orderId, amount, currency = 'gbp' } = req.body;
+    
+    if (!orderId || !amount) {
+      return res.status(400).json({ error: 'Order ID and amount are required' });
+    }
+    
+    // Verify the order exists and get details
+    const orderResult = await query('SELECT * FROM orders WHERE order_id = $1', [orderId]);
+    if (orderResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    
+    const order = orderResult.rows[0];
+    
+    // Convert amount to pence (Stripe uses smallest currency unit)
+    const amountInPence = priceToPence(amount);
+    
+    // Create payment intent
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amountInPence,
+      currency: currency,
+      metadata: {
+        orderId: orderId,
+        customerName: order.customer_name,
+        items: JSON.stringify(order.items)
+      },
+      automatic_payment_methods: {
+        enabled: true,
+      },
+    });
+    
+    res.json({
+      clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id,
+      amount: amount,
+      currency: currency
+    });
+    
+  } catch (error) {
+    console.error('Error creating payment intent:', error);
+    res.status(500).json({ error: 'Failed to create payment intent' });
+  }
+});
+
+// Confirm payment and update order
+app.post('/api/payment/confirm', async (req, res) => {
+  try {
+    const { paymentIntentId, orderId } = req.body;
+    
+    if (!paymentIntentId || !orderId) {
+      return res.status(400).json({ error: 'Payment intent ID and order ID are required' });
+    }
+    
+    // Retrieve payment intent from Stripe
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    
+    if (paymentIntent.status === 'succeeded') {
+      // Update order status to 'paid'
+      const result = await query(`
+        UPDATE orders 
+        SET status = 'paid', updated_at = NOW()
+        WHERE order_id = $1
+        RETURNING *
+      `, [orderId]);
+      
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+      
+      const order = dbOrderToApi(result.rows[0]);
+  
+  res.json({
+        success: true,
+        message: 'Payment confirmed and order updated',
+        order: order,
+        paymentIntent: {
+          id: paymentIntent.id,
+          status: paymentIntent.status,
+          amount: penceToPrice(paymentIntent.amount),
+          currency: paymentIntent.currency
+        }
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: 'Payment not successful',
+        status: paymentIntent.status
+      });
+    }
+    
+  } catch (error) {
+    console.error('Error confirming payment:', error);
+    res.status(500).json({ error: 'Failed to confirm payment' });
+  }
+});
+
+// Get Stripe publishable key (for frontend)
+app.get('/api/payment/config', (req, res) => {
+  res.json({
+    publishableKey: stripeConfig.publishableKey,
+    currency: stripeConfig.currency
+  });
+});
+
+// Stripe webhook endpoint (for production)
+app.post('/api/payment/webhook', express.raw({type: 'application/json'}), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  
+  let event;
+  
+  try {
+    if (stripeConfig.webhookSecret) {
+      event = stripe.webhooks.constructEvent(req.body, sig, stripeConfig.webhookSecret);
+    } else {
+      console.log('Webhook secret not configured, skipping signature verification');
+      event = JSON.parse(req.body);
+    }
+  } catch (err) {
+    console.error('Webhook signature verification failed:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+  
+  // Handle the event
+  switch (event.type) {
+    case 'payment_intent.succeeded':
+      const paymentIntent = event.data.object;
+      console.log('Payment succeeded:', paymentIntent.id);
+      
+      // Update order status in database
+      if (paymentIntent.metadata.orderId) {
+        await query(`
+          UPDATE orders 
+          SET status = 'paid', updated_at = NOW()
+          WHERE order_id = $1
+        `, [paymentIntent.metadata.orderId]);
+      }
+      break;
+      
+    case 'payment_intent.payment_failed':
+      const failedPayment = event.data.object;
+      console.log('Payment failed:', failedPayment.id);
+      break;
+      
+    default:
+      console.log(`Unhandled event type ${event.type}`);
+  }
+  
+  res.json({received: true});
 });
 
 // Health check endpoint
