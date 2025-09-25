@@ -133,6 +133,8 @@ app.get('/login', (req, res) => {
 app.get('/auth/auth0', (req, res, next) => {
   console.log('🚀 Auth0 authentication route accessed');
   console.log('  - Redirecting to Auth0 for authentication');
+  console.log('  - Session ID:', req.sessionID);
+  console.log('  - Is authenticated:', req.isAuthenticated());
   
   // Check if Auth0 is properly configured
   if (!process.env.AUTH0_DOMAIN || !process.env.AUTH0_CLIENT_ID || !process.env.AUTH0_CLIENT_SECRET) {
@@ -147,6 +149,12 @@ app.get('/auth/auth0', (req, res, next) => {
       </ul>
       <p>Please configure these environment variables on Railway.</p>
     `);
+  }
+  
+  // Clear any existing session to prevent loops
+  if (req.isAuthenticated()) {
+    console.log('⚠️ User already authenticated, logging out first');
+    req.logout(() => {});
   }
   
   passport.authenticate('auth0', {

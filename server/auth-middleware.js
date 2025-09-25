@@ -37,6 +37,14 @@ export function configurePassport() {
     auth0StrategyConfig,
     (accessToken, refreshToken, extraParams, profile, done) => {
       console.log('✅ Auth0 authentication successful for user:', profile.id);
+      console.log('User organizations:', extraParams.organization_memberships || 'None');
+      
+      // Optional: Check if user belongs to required organization
+      // const requiredOrg = process.env.AUTH0_REQUIRED_ORG;
+      // if (requiredOrg && !extraParams.organization_memberships?.includes(requiredOrg)) {
+      //   return done(new Error('User not in required organization'));
+      // }
+      
       return done(null, profile);
     }
   );
@@ -70,6 +78,12 @@ export function requireAuthWeb(req, res, next) {
   console.log('  - Is authenticated:', req.isAuthenticated());
   console.log('  - Session ID:', req.sessionID);
   console.log('  - User:', req.user ? 'Present' : 'Missing');
+  
+  // Temporary bypass for testing - remove this later
+  if (process.env.BYPASS_AUTH === 'true') {
+    console.log('⚠️ Auth bypassed for testing');
+    return next();
+  }
   
   if (req.isAuthenticated()) {
     console.log('✅ User authenticated, proceeding');
