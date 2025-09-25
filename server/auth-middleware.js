@@ -21,12 +21,22 @@ export function configurePassport() {
   console.log('   Client ID:', auth0StrategyConfig.clientID);
   console.log('   Callback URL:', auth0StrategyConfig.callbackURL);
   
+  // Check if Auth0 config is valid
+  if (!auth0StrategyConfig.domain || !auth0StrategyConfig.clientID || !auth0StrategyConfig.clientSecret) {
+    console.error('❌ Auth0 configuration is incomplete!');
+    console.error('   Missing:', {
+      domain: !auth0StrategyConfig.domain,
+      clientID: !auth0StrategyConfig.clientID,
+      clientSecret: !auth0StrategyConfig.clientSecret
+    });
+    return;
+  }
+  
   // Auth0 Strategy
   const strategy = new Auth0Strategy(
     auth0StrategyConfig,
     (accessToken, refreshToken, extraParams, profile, done) => {
-      // This function is called when user successfully logs in
-      // You can save user info to database here if needed
+      console.log('✅ Auth0 authentication successful for user:', profile.id);
       return done(null, profile);
     }
   );

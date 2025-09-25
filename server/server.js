@@ -130,9 +130,13 @@ app.get('/login', (req, res) => {
 });
 
 // Auth0 authentication route
-app.get('/auth/auth0', passport.authenticate('auth0', {
-  scope: 'openid email profile'
-}));
+app.get('/auth/auth0', (req, res, next) => {
+  console.log('🚀 Auth0 authentication route accessed');
+  console.log('  - Redirecting to Auth0 for authentication');
+  passport.authenticate('auth0', {
+    scope: 'openid email profile'
+  })(req, res, next);
+});
 
 // Auth0 callback route
 app.get('/callback', passport.authenticate('auth0', {
