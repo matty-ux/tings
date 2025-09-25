@@ -25,18 +25,31 @@ async function migrateData() {
       
       for (const product of productsData) {
         await query(`
-          INSERT INTO products (name, price, category, active, stock, description, image_url, metadata)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          INSERT INTO products (
+            sku, name, short_desc, full_desc, category, tags,
+            price, sale_price, image_url, images, cost_price, available,
+            tax_rate, stock_qty, max_order_qty, prep_time_mins, active, sort_order
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
           ON CONFLICT DO NOTHING
         `, [
+          product.sku || '',
           product.name,
-          product.price,
+          product.shortDesc || '',
+          product.fullDesc || '',
           product.category || 'General',
+          JSON.stringify(product.tags || []),
+          product.price,
+          product.salePrice || null,
+          product.imageUrl || product.image || '',
+          JSON.stringify(product.images || []),
+          product.costPrice || null,
+          product.available !== false,
+          product.taxRate || 0,
+          product.stockQty || product.stock || 0,
+          product.maxOrderQty || 5,
+          product.prepTimeMins || 15,
           product.active !== false,
-          product.stock || 0,
-          product.description || '',
-          product.image || '',
-          JSON.stringify(product.metadata || {})
+          product.sortOrder || 0
         ]);
       }
       console.log(`✅ Migrated ${productsData.length} products`);
@@ -54,14 +67,14 @@ async function migrateData() {
           ON CONFLICT (order_id) DO NOTHING
         `, [
           order.id,
-          order.customerName || 'Guest',
-          order.customerPhone || '',
-          order.customerEmail || '',
+          order.customer?.name || 'Guest',
+          order.customer?.phone || '',
+          order.customer?.email || '',
           JSON.stringify(order.items || []),
           order.total || 0,
           order.status || 'new',
-          order.deliveryAddress || '',
-          order.specialInstructions || ''
+          order.address ? `${order.address.line1 || ''} ${order.address.line2 || ''} ${order.address.city || ''} ${order.address.postcode || ''}`.trim() : '',
+          order.notes || ''
         ]);
       }
       console.log(`✅ Migrated ${ordersData.length} orders`);
