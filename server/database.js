@@ -11,6 +11,12 @@ const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 // For local development, you can set a local PostgreSQL URL
 const localUrl = process.env.LOCAL_DATABASE_URL || 'postgresql://localhost:5432/vendgb';
 
+// Check if we have a database URL
+if (!databaseUrl && !localUrl) {
+  console.error('❌ No database URL found. Please add PostgreSQL to Railway or set LOCAL_DATABASE_URL');
+  process.exit(1);
+}
+
 const pool = new Pool({
   connectionString: databaseUrl || localUrl,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
