@@ -516,9 +516,10 @@
             <h3>System Information</h3>
             <div style="background: var(--soft); padding: 16px; border-radius: 8px; border: 1px solid var(--border);">
               <p><strong>Server Version:</strong> 1.0.0</p>
-              <p><strong>Database:</strong> JSON File Storage</p>
+              <p><strong>Database:</strong> PostgreSQL (Railway)</p>
               <p><strong>Environment:</strong> <span id="accountEnvironment">production</span></p>
-              <p><strong>Last Backup:</strong> <span id="lastBackup">Never</span></p>
+              <p><strong>Authentication:</strong> Auth0</p>
+              <p><strong>Payments:</strong> Stripe Integration</p>
               <p><strong>Storage Used:</strong> <span id="storageUsed">Calculating...</span></p>
             </div>
           </div>
@@ -849,9 +850,62 @@ function toggleTheme() {
 }
 
 // Account functions
-function updateAccountInfo() {
-  // Update last active time
-  document.getElementById('lastActive').textContent = new Date().toLocaleString();
+async function updateAccountInfo() {
+  try {
+    // Fetch real user information
+    const response = await fetch('/api/user');
+    const userData = await response.json();
+    
+    if (userData && userData.email) {
+      // Update account information with real data
+      document.querySelector('#accountView .card h2').innerHTML = `👤 ${userData.name || 'User Account'}`;
+      
+      // Update account information section
+      const accountInfo = document.querySelector('#accountView .card div:nth-of-type(2) div');
+      accountInfo.innerHTML = `
+        <p><strong>Name:</strong> ${userData.name || 'Not provided'}</p>
+        <p><strong>Email:</strong> ${userData.email}</p>
+        <p><strong>User ID:</strong> ${userData.id}</p>
+        <p><strong>Status:</strong> <span class="badge" style="background: #d1fae5; color: #065f46;">Authenticated</span></p>
+        <p><strong>Permissions:</strong> Full Admin Access</p>
+        <p><strong>Login Method:</strong> Auth0 Authentication</p>
+        <p><strong>Last Active:</strong> <span id="lastActive">${new Date().toLocaleString()}</span></p>
+      `;
+      
+      // Update security settings
+      const securityInfo = document.querySelector('#accountView .card div:nth-of-type(3) div');
+      securityInfo.innerHTML = `
+        <p><strong>Authentication:</strong> <span class="badge" style="background: #d1fae5; color: #065f46;">Auth0 Enabled</span></p>
+        <p><strong>Two-Factor Auth:</strong> <span class="badge" style="background: #d1fae5; color: #065f46;">Available via Auth0</span></p>
+        <p><strong>Session Management:</strong> <span class="badge" style="background: #d1fae5; color: #065f46;">Active Session</span></p>
+        <p><strong>Provider:</strong> Google (via Auth0)</p>
+        <p class="hint" style="margin-top: 8px;">Your account is secured with Auth0 authentication.</p>
+      `;
+      
+      // Add logout button to account actions
+      const accountActions = document.querySelector('#accountView .card div:nth-of-type(4) div');
+      accountActions.innerHTML = `
+        <button class="btn" onclick="exportData()" style="width: auto;">
+          📥 Export Data
+        </button>
+        <button class="btn" onclick="viewLogs()" style="width: auto;">
+          📋 View Logs
+        </button>
+        <button class="btn" onclick="clearCache()" style="width: auto;">
+          🗑️ Clear Cache
+        </button>
+        <button class="btn" onclick="logout()" style="width: auto; background: #fee2e2; color: #dc2626;">
+          🚪 Logout
+        </button>
+      `;
+    } else {
+      // Fallback for unauthenticated users
+      console.warn('No user data available');
+    }
+  } catch (error) {
+    console.error('Failed to fetch user data:', error);
+    // Keep the default placeholder content
+  }
   
   // Update environment
   document.getElementById('accountEnvironment').textContent = window.location.hostname.includes('railway') ? 'Production' : 'Development';
@@ -871,6 +925,21 @@ function calculateStorageUsage() {
   const ordersCount = _allOrders.length;
   const estimatedSize = (productsCount * 0.5) + (ordersCount * 2); // KB
   document.getElementById('storageUsed').textContent = `${estimatedSize.toFixed(1)} KB`;
+}
+
+async function logout() {
+  try {
+    const response = await fetch('/logout');
+    if (response.ok) {
+      // Redirect to login page
+      window.location.href = '/login';
+    } else {
+      toast('Logout failed. Please try again.');
+    }
+  } catch (error) {
+    console.error('Logout error:', error);
+    toast('Logout failed. Please try again.');
+  }
 }
 
 function exportData() {
