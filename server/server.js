@@ -339,7 +339,13 @@ app.post('/api/payment/create-intent', async (req, res) => {
     
   } catch (error) {
     console.error('Error creating payment intent:', error);
-    res.status(500).json({ error: 'Failed to create payment intent' });
+    console.error('Error details:', error.message);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      error: 'Failed to create payment intent',
+      details: error.message,
+      stripeError: error.type || 'unknown'
+    });
   }
 });
 
