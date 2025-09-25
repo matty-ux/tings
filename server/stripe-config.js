@@ -6,8 +6,9 @@ import Stripe from 'stripe';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 if (!process.env.STRIPE_SECRET_KEY) {
-  console.error('❌ STRIPE_SECRET_KEY environment variable is required');
-  process.exit(1);
+  console.error('❌ STRIPE_SECRET_KEY environment variable is required for payments');
+  console.log('💡 Set STRIPE_SECRET_KEY on Railway to enable payment functionality');
+  // Don't exit - let server start without payments for now
 }
 
 export default stripe;

@@ -293,6 +293,10 @@ app.delete('/api/admin/orders/:id', async (req, res) => {
 // Create payment intent for an order
 app.post('/api/payment/create-intent', async (req, res) => {
   try {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return res.status(503).json({ error: 'Payment service not configured. Stripe API key missing.' });
+    }
+    
     const { orderId, amount, currency = 'gbp' } = req.body;
     
     if (!orderId || !amount) {
@@ -391,6 +395,10 @@ app.post('/api/payment/confirm', async (req, res) => {
 
 // Get Stripe publishable key (for frontend)
 app.get('/api/payment/config', (req, res) => {
+  if (!process.env.STRIPE_PUBLISHABLE_KEY) {
+    return res.status(503).json({ error: 'Payment service not configured. Stripe publishable key missing.' });
+  }
+  
   res.json({
     publishableKey: stripeConfig.publishableKey,
     currency: stripeConfig.currency
