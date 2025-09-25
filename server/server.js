@@ -515,10 +515,11 @@ async function startServer() {
   await initializeApp();
   
   app.listen(port, () => {
-    console.log(`🚀 Vend GB Admin Server running on port ${port}`);
-    console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`🌐 Admin Panel: http://localhost:${port}/admin`);
-    console.log(`❤️ Health Check: http://localhost:${port}/health`);
+        console.log(`🚀 Vend GB Admin Server running on port ${port}`);
+        console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+        console.log(`🌐 Admin Panel: http://localhost:${port}/admin`);
+        console.log(`❤️ Health Check: http://localhost:${port}/health`);
+        console.log(`💳 Payment Endpoints: /api/payment/*`);
   });
 }
 
