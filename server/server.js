@@ -6,12 +6,33 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { initializeDatabase, query } from './database.js';
 import stripe, { stripeConfig, priceToPence, penceToPrice } from './stripe-config.js';
+import passport from 'passport';
+import { 
+  sessionConfig, 
+  configurePassport, 
+  requireAuth, 
+  requireAuthWeb, 
+  addUserInfo, 
+  logout 
+} from './auth-middleware.js';
+import { validateAuth0Config } from './auth-config.js';
 
 const app = express();
 const port = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
+
+// Session and Authentication middleware
+app.use(session(sessionConfig));
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Configure Passport
+configurePassport();
+
+// Add user info to requests
+app.use(addUserInfo);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -90,8 +111,52 @@ app.get('/api/products', async (req, res) => {
   }
 });
 
+// ===== AUTH0 AUTHENTICATION ROUTES =====
+
+// Auth0 login route
+app.get('/login', (req, res) => {
+  if (req.isAuthenticated()) {
+    return res.redirect('/admin');
+  }
+  res.redirect('/auth/auth0');
+});
+
+// Auth0 authentication route
+app.get('/auth/auth0', passport.authenticate('auth0', {
+  scope: 'openid email profile'
+}));
+
+// Auth0 callback route
+app.get('/callback', passport.authenticate('auth0', {
+  failureRedirect: '/login?error=auth_failed'
+}), (req, res) => {
+  res.redirect('/admin');
+});
+
+// Logout route
+app.get('/logout', logout);
+
+// User info API endpoint
+app.get('/api/user', (req, res) => {
+  if (req.isAuthenticated()) {
+    res.json({
+      authenticated: true,
+      user: {
+        id: req.user.id,
+        email: req.user.emails?.[0]?.value,
+        name: req.user.displayName || req.user.name?.givenName + ' ' + req.user.name?.familyName,
+        picture: req.user.picture
+      }
+    });
+  } else {
+    res.json({ authenticated: false });
+  }
+});
+
+// ===== ADMIN API ROUTES (PROTECTED) =====
+
 // Admin API - full access including costPrice
-app.get('/api/admin/products', async (req, res) => {
+app.get('/api/admin/products', requireAuth, async (req, res) => {
   try {
     const result = await query(`
       SELECT * FROM products 
@@ -107,7 +172,7 @@ app.get('/api/admin/products', async (req, res) => {
 });
 
 // Create new product
-app.post('/api/admin/products', async (req, res) => {
+app.post('/api/admin/products', requireAuth, async (req, res) => {
   try {
   const {
     sku, name, shortDesc, fullDesc, category, tags,
@@ -141,7 +206,7 @@ app.post('/api/admin/products', async (req, res) => {
 });
 
 // Update product
-app.put('/api/admin/products/:id', async (req, res) => {
+app.put('/api/admin/products/:id', requireAuth, async (req, res) => {
   try {
   const { id } = req.params;
   const {
@@ -177,7 +242,7 @@ app.put('/api/admin/products/:id', async (req, res) => {
 });
 
 // Delete product
-app.delete('/api/admin/products/:id', async (req, res) => {
+app.delete('/api/admin/products/:id', requireAuth, async (req, res) => {
   try {
   const { id } = req.params;
     
@@ -195,7 +260,7 @@ app.delete('/api/admin/products/:id', async (req, res) => {
 });
 
 // Orders API
-app.get('/api/admin/orders', async (req, res) => {
+app.get('/api/admin/orders', requireAuth, async (req, res) => {
   try {
     const result = await query(`
       SELECT * FROM orders 
@@ -244,7 +309,7 @@ app.post('/api/orders', async (req, res) => {
 });
 
 // Update order status
-app.put('/api/admin/orders/:id/status', async (req, res) => {
+app.put('/api/admin/orders/:id/status', requireAuth, async (req, res) => {
   try {
   const { id } = req.params;
     const { status } = req.body;
@@ -273,7 +338,7 @@ app.put('/api/admin/orders/:id/status', async (req, res) => {
 });
 
 // Delete order
-app.delete('/api/admin/orders/:id', async (req, res) => {
+app.delete('/api/admin/orders/:id', requireAuth, async (req, res) => {
   try {
   const { id } = req.params;
     
@@ -468,8 +533,8 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Admin UI - serve the new admin panel
-app.get('/admin', (req, res) => {
+// Admin UI - serve the new admin panel (protected)
+app.get('/admin', requireAuthWeb, (req, res) => {
   console.log('Admin route accessed');
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
@@ -530,10 +595,14 @@ app.use(express.static('public'));
 async function startServer() {
   await initializeApp();
   
+  // Validate Auth0 configuration
+  const auth0Enabled = validateAuth0Config();
+  
   app.listen(port, () => {
         console.log(`🚀 Vend GB Admin Server running on port ${port}`);
         console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
         console.log(`🌐 Admin Panel: http://localhost:${port}/admin`);
+        console.log(`🔐 Authentication: ${auth0Enabled ? 'Auth0 enabled' : 'Auth0 disabled'}`);
         console.log(`❤️ Health Check: http://localhost:${port}/health`);
         console.log(`💳 Payment Endpoints: /api/payment/*`);
   });

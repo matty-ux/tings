@@ -356,6 +356,7 @@
         <button class="btn" onclick="showProducts()">📦 Products</button>
         <button class="btn" onclick="showOrders()">📋 Orders</button>
         <button class="btn" onclick="showAccount()">👤 Account</button>
+        <button class="btn" onclick="logout()" style="background-color: #dc3545; color: white;">🚪 Logout</button>
       </div>
       
       <div class="server-info">
@@ -936,9 +937,48 @@ document.addEventListener('DOMContentLoaded', function() {
       .catch(() => {});
   }, 1000);
   
-  // Load data
-  refresh();
+  // Check authentication status first
+  checkAuthStatus().then(() => {
+    // Load data after authentication check
+    refresh();
+  });
 });
+
+// Authentication functions
+async function checkAuthStatus() {
+  try {
+    const response = await fetch('/api/user');
+    const userInfo = await response.json();
+    
+    if (userInfo.authenticated) {
+      // Display user info in the sidebar
+      const userInfoDiv = document.createElement('div');
+      userInfoDiv.className = 'server-info';
+      userInfoDiv.innerHTML = `
+        <h3>User Info</h3>
+        <p><strong>Name:</strong> ${userInfo.user.name}</p>
+        <p><strong>Email:</strong> ${userInfo.user.email}</p>
+      `;
+      
+      // Insert user info after server status
+      const sidebar = document.querySelector('.sidebar');
+      const serverInfo = sidebar.querySelector('.server-info');
+      sidebar.insertBefore(userInfoDiv, serverInfo.nextSibling);
+    } else {
+      // Redirect to login if not authenticated
+      window.location.href = '/login';
+    }
+  } catch (error) {
+    console.error('Auth check failed:', error);
+    window.location.href = '/login';
+  }
+}
+
+function logout() {
+  if (confirm('Are you sure you want to logout?')) {
+    window.location.href = '/logout';
+  }
+}
 
 // Navigation functions
 function showProducts() {
