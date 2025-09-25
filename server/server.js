@@ -116,9 +116,16 @@ app.get('/api/products', async (req, res) => {
 
 // Auth0 login route
 app.get('/login', (req, res) => {
+  console.log('🔍 Login route accessed:');
+  console.log('  - Is authenticated:', req.isAuthenticated());
+  console.log('  - Session ID:', req.sessionID);
+  console.log('  - User:', req.user ? 'Present' : 'Missing');
+  
   if (req.isAuthenticated()) {
+    console.log('✅ Already authenticated, redirecting to admin');
     return res.redirect('/admin');
   }
+  console.log('🔄 Not authenticated, redirecting to Auth0');
   res.redirect('/auth/auth0');
 });
 

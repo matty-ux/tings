@@ -55,9 +55,17 @@ export function requireAuth(req, res, next) {
 
 // Middleware to check if user is authenticated for web routes
 export function requireAuthWeb(req, res, next) {
+  console.log('🔍 requireAuthWeb check:');
+  console.log('  - URL:', req.url);
+  console.log('  - Is authenticated:', req.isAuthenticated());
+  console.log('  - Session ID:', req.sessionID);
+  console.log('  - User:', req.user ? 'Present' : 'Missing');
+  
   if (req.isAuthenticated()) {
+    console.log('✅ User authenticated, proceeding');
     return next();
   } else {
+    console.log('❌ User not authenticated, redirecting to login');
     res.redirect('/login');
   }
 }
