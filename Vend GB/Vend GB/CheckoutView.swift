@@ -74,23 +74,10 @@ struct CheckoutView: View {
                 if deliveryType == .delivery {
                     VStack(spacing: 16) {
                         // Map
-                        Map(coordinateRegion: .constant(MKCoordinateRegion(
-                            center: selectedLocation ?? locationManager.location?.coordinate ?? CLLocationCoordinate2D(latitude: 51.5074, longitude: -0.1278),
-                            span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
-                        )), annotationItems: [MapPin(coordinate: selectedLocation ?? locationManager.location?.coordinate ?? CLLocationCoordinate2D(latitude: 51.5074, longitude: -0.1278))]) { pin in
-                            MapAnnotation(coordinate: pin.coordinate) {
-                                VStack {
-                                    Image(systemName: "mappin.circle.fill")
-                                        .font(.system(size: 30))
-                                        .foregroundColor(.red)
-                                        .background(
-                                            Circle()
-                                                .fill(Color.white)
-                                                .frame(width: 20, height: 20)
-                                        )
-                                }
-                            }
-                        }
+                        MapView(
+                            selectedLocation: selectedLocation,
+                            locationManager: locationManager
+                        )
                         .frame(height: 200)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .overlay(
@@ -142,7 +129,7 @@ struct CheckoutView: View {
                     .onAppear {
                         updateCurrentAddress()
                     }
-                    .onChange(of: selectedLocation) { _ in
+                    .onChange(of: selectedLocation) { newLocation in
                         updateCurrentAddress()
                     }
                     .sheet(isPresented: $showingMapEditor) {
@@ -620,6 +607,33 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
 struct MapPin: Identifiable {
     let id = UUID()
     let coordinate: CLLocationCoordinate2D
+}
+
+// MARK: - Map View
+struct MapView: View {
+    let selectedLocation: CLLocationCoordinate2D?
+    let locationManager: LocationManager
+    
+    var body: some View {
+        let mapCenter = selectedLocation ?? locationManager.location?.coordinate ?? CLLocationCoordinate2D(latitude: 51.5074, longitude: -0.1278)
+        let mapRegion = MKCoordinateRegion(
+            center: mapCenter,
+            span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+        )
+        
+        Map(coordinateRegion: .constant(mapRegion), annotationItems: [MapPin(coordinate: mapCenter)]) { pin in
+            MapAnnotation(coordinate: pin.coordinate) {
+                Image(systemName: "mappin.circle.fill")
+                    .font(.system(size: 30))
+                    .foregroundColor(.red)
+                    .background(
+                        Circle()
+                            .fill(Color.white)
+                            .frame(width: 20, height: 20)
+                    )
+            }
+        }
+    }
 }
 
 // MARK: - Map Editor View

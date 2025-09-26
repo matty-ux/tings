@@ -265,7 +265,6 @@ struct ProductDetailView: View {
     }
     
     private func addToCart() {
-        let price = product.salePrice ?? product.price
         cart.add(product: product, quantity: quantity)
         showingAddedToCart = true
     }
