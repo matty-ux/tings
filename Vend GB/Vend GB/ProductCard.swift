@@ -5,22 +5,25 @@ struct ProductCard: View {
     let cart: CartManager
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ProductImageView(product: product)
-            ProductInfoView(product: product, cart: cart)
+        NavigationLink(destination: ProductDetailView(product: product)) {
+            VStack(alignment: .leading, spacing: 0) {
+                ProductImageView(product: product)
+                ProductInfoView(product: product, cart: cart)
+            }
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .shadow(
+                color: Color.black.opacity(0.05),
+                radius: 2,
+                x: 0,
+                y: 1
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color(.systemGray5), lineWidth: 0.5)
+            )
         }
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .shadow(
-            color: Color.black.opacity(0.05),
-            radius: 2,
-            x: 0,
-            y: 1
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(Color(.systemGray5), lineWidth: 0.5)
-        )
+        .buttonStyle(PlainButtonStyle())
     }
 }
 

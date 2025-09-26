@@ -268,15 +268,18 @@ struct ProductsGridView: View {
     let cart: CartManager
     
     var body: some View {
-        LazyVGrid(columns: [
-            GridItem(.flexible(), spacing: 12),
-            GridItem(.flexible(), spacing: 12)
-        ], spacing: 16) {
-            ForEach(products) { product in
-                ProductCard(product: product, cart: cart)
+        NavigationView {
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: 12),
+                GridItem(.flexible(), spacing: 12)
+            ], spacing: 16) {
+                ForEach(products) { product in
+                    ProductCard(product: product, cart: cart)
+                }
             }
+            .padding(.horizontal, 20)
         }
-        .padding(.horizontal, 20)
+        .navigationViewStyle(StackNavigationViewStyle())
     }
 }
 
