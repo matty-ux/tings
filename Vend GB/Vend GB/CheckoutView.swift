@@ -5,7 +5,7 @@ import CoreLocation
 // MARK: - CLLocationCoordinate2D Extension
 extension CLLocationCoordinate2D: Equatable {
     public static func == (lhs: CLLocationCoordinate2D, rhs: CLLocationCoordinate2D) -> Bool {
-        return lhs.latitude == rhs.latitude && lhs.longitude == rhs.longitude
+        return abs(lhs.latitude - rhs.latitude) < 0.0001 && abs(lhs.longitude - rhs.longitude) < 0.0001
     }
 }
 
@@ -136,7 +136,7 @@ struct CheckoutView: View {
                     .onAppear {
                         updateCurrentAddress()
                     }
-                    .onChange(of: selectedLocation) { newLocation in
+                    .onChange(of: selectedLocation) { _, _ in
                         updateCurrentAddress()
                     }
                     .sheet(isPresented: $showingMapEditor) {
@@ -623,7 +623,7 @@ struct MapView: View {
             span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
         )
         
-        Map(coordinateRegion: .constant(mapRegion)) {
+        Map(coordinateRegion: .constant(mapRegion), interactionModes: .all, showsUserLocation: false) {
             Annotation("Location", coordinate: mapCenter) {
                 Image(systemName: "mappin.circle.fill")
                     .font(.system(size: 30))
@@ -660,7 +660,7 @@ struct MapEditorView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                Map(coordinateRegion: $region) {
+                Map(coordinateRegion: $region, interactionModes: .all, showsUserLocation: false) {
                     Annotation("Location", coordinate: region.center) {
                         Image(systemName: "mappin.circle.fill")
                             .font(.system(size: 30))
@@ -675,7 +675,7 @@ struct MapEditorView: View {
                 .onTapGesture { location in
                     // Handle tap to move pin
                 }
-                .onChange(of: region.center) { newCenter in
+                .onChange(of: region.center) { _, newCenter in
                     selectedLocation = newCenter
                     updateAddress(for: newCenter)
                 }
