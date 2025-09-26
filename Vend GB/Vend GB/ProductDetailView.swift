@@ -5,7 +5,7 @@ struct ProductDetailView: View {
     @StateObject private var cart = CartManager.shared
     @State private var quantity: Int = 1
     @State private var showingAddedToCart = false
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         ScrollView {
@@ -241,7 +241,7 @@ struct ProductDetailView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button("Close") {
-                    presentationMode.wrappedValue.dismiss()
+                    dismiss()
                 }
             }
         }
@@ -266,15 +266,7 @@ struct ProductDetailView: View {
     
     private func addToCart() {
         let price = product.salePrice ?? product.price
-        cart.addItem(
-            Item(
-                id: product.id,
-                name: product.name,
-                price: price,
-                quantity: quantity,
-                imageUrl: product.imageUrl
-            )
-        )
+        cart.add(product: product, quantity: quantity)
         showingAddedToCart = true
     }
 }

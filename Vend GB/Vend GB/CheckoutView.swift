@@ -164,7 +164,7 @@ struct CheckoutView: View {
         .navigationTitle("Checkout")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingPaymentSheet) {
-            if let orderRequest = pendingOrderRequest {
+            if pendingOrderRequest != nil {
                 PaymentSheet(isPresented: $showingPaymentSheet, orderRequest: $pendingOrderRequest)
                     .onDisappear {
                         // Handle payment completion

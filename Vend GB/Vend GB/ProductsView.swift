@@ -83,10 +83,10 @@ struct ProductsView: View {
             }
         }
         .task { load() }
-        .onChange(of: searchText) { _ in
+        .onChange(of: searchText) {
             filterProducts()
         }
-        .onChange(of: selectedCategory) { _ in
+        .onChange(of: selectedCategory) {
             filterProducts()
         }
         .preferredColorScheme(isDarkMode ? .dark : .light)

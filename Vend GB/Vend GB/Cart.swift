@@ -25,6 +25,14 @@ final class CartManager: ObservableObject {
             items.append(CartItem(id: product.id, product: product, quantity: 1))
         }
     }
+    
+    func add(product: Product, quantity: Int) {
+        if let idx = items.firstIndex(where: { $0.product.id == product.id }) {
+            items[idx].quantity += quantity
+        } else {
+            items.append(CartItem(id: product.id, product: product, quantity: quantity))
+        }
+    }
 
     func changeQuantity(for productId: String, by delta: Int) {
         guard let idx = items.firstIndex(where: { $0.product.id == productId }) else { return }
