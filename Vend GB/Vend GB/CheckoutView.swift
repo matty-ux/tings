@@ -1,7 +1,10 @@
 import SwiftUI
+import MapKit
+import CoreLocation
 
 struct CheckoutView: View {
     @StateObject private var cart = CartManager.shared
+    @StateObject private var locationManager = LocationManager()
     @State private var name: String = ""
     @State private var phone: String = ""
     @State private var line1: String = ""
@@ -14,6 +17,9 @@ struct CheckoutView: View {
     @State private var pendingOrderRequest: OrderRequest?
     @State private var deliveryType: DeliveryType = .delivery
     @State private var selectedDeliveryTime: DeliveryTime = .standard
+    @State private var showingMapEditor = false
+    @State private var selectedLocation: CLLocationCoordinate2D?
+    @State private var currentAddress: String = "Getting your location..."
 
     enum DeliveryType: String, CaseIterable {
         case delivery = "Delivery"
@@ -63,6 +69,89 @@ struct CheckoutView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
+                
+                // Map Section
+                if deliveryType == .delivery {
+                    VStack(spacing: 16) {
+                        // Map
+                        Map(coordinateRegion: .constant(MKCoordinateRegion(
+                            center: selectedLocation ?? locationManager.location?.coordinate ?? CLLocationCoordinate2D(latitude: 51.5074, longitude: -0.1278),
+                            span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+                        )), annotationItems: [MapPin(coordinate: selectedLocation ?? locationManager.location?.coordinate ?? CLLocationCoordinate2D(latitude: 51.5074, longitude: -0.1278))]) { pin in
+                            MapAnnotation(coordinate: pin.coordinate) {
+                                VStack {
+                                    Image(systemName: "mappin.circle.fill")
+                                        .font(.system(size: 30))
+                                        .foregroundColor(.red)
+                                        .background(
+                                            Circle()
+                                                .fill(Color.white)
+                                                .frame(width: 20, height: 20)
+                                        )
+                                }
+                            }
+                        }
+                        .frame(height: 200)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color(.systemGray5), lineWidth: 1)
+                        )
+                        .onTapGesture {
+                            showingMapEditor = true
+                        }
+                        
+                        // Edit pin button
+                        Button(action: {
+                            showingMapEditor = true
+                        }) {
+                            HStack {
+                                Image(systemName: "pencil")
+                                    .font(.system(size: 14))
+                                Text("Edit pin")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                            }
+                            .foregroundColor(.blue)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(Color(.systemGray6))
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
+                        
+                        // Current location display
+                        HStack {
+                            Image(systemName: "location.fill")
+                                .foregroundColor(.blue)
+                                .font(.system(size: 14))
+                            Text(currentAddress)
+                                .font(.subheadline)
+                                .foregroundColor(.primary)
+                                .lineLimit(2)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.secondary)
+                                .font(.system(size: 12))
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(Color(.systemGray6))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+                    .padding(.horizontal, 20)
+                    .onAppear {
+                        updateCurrentAddress()
+                    }
+                    .onChange(of: selectedLocation) { _ in
+                        updateCurrentAddress()
+                    }
+                    .sheet(isPresented: $showingMapEditor) {
+                        MapEditorView(
+                            selectedLocation: $selectedLocation,
+                            currentAddress: $currentAddress
+                        )
+                    }
+                }
                 
                 // Order Summary Section
                 VStack(spacing: 16) {
@@ -389,6 +478,32 @@ struct CheckoutView: View {
         return total
     }
     
+    private func updateCurrentAddress() {
+        let location = selectedLocation ?? locationManager.location?.coordinate
+        guard let location = location else {
+            currentAddress = "Location not available"
+            return
+        }
+        
+        let geocoder = CLGeocoder()
+        geocoder.reverseGeocodeLocation(CLLocation(latitude: location.latitude, longitude: location.longitude)) { placemarks, error in
+            DispatchQueue.main.async {
+                if let placemark = placemarks?.first {
+                    let addressComponents = [
+                        placemark.subThoroughfare,
+                        placemark.thoroughfare,
+                        placemark.locality,
+                        placemark.postalCode
+                    ].compactMap { $0 }
+                    
+                    self.currentAddress = addressComponents.joined(separator: ", ")
+                } else {
+                    self.currentAddress = "Address not found"
+                }
+            }
+        }
+    }
+    
     private func prepareOrder() async {
         isSubmitting = true
         defer { isSubmitting = false }
@@ -459,6 +574,167 @@ struct ModernTextField: View {
                 .padding(.vertical, 12)
                 .background(Color(.systemGray6))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+    }
+}
+
+// MARK: - Location Manager
+class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
+    private let locationManager = CLLocationManager()
+    @Published var location: CLLocation?
+    @Published var authorizationStatus: CLAuthorizationStatus = .notDetermined
+    
+    override init() {
+        super.init()
+        locationManager.delegate = self
+        locationManager.desiredAccuracy = kCLLocationAccuracyBest
+        requestLocationPermission()
+    }
+    
+    func requestLocationPermission() {
+        locationManager.requestWhenInUseAuthorization()
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let location = locations.last else { return }
+        DispatchQueue.main.async {
+            self.location = location
+        }
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
+        DispatchQueue.main.async {
+            self.authorizationStatus = status
+            if status == .authorizedWhenInUse || status == .authorizedAlways {
+                self.locationManager.startUpdatingLocation()
+            }
+        }
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        print("Location manager failed with error: \(error.localizedDescription)")
+    }
+}
+
+// MARK: - Map Pin
+struct MapPin: Identifiable {
+    let id = UUID()
+    let coordinate: CLLocationCoordinate2D
+}
+
+// MARK: - Map Editor View
+struct MapEditorView: View {
+    @Binding var selectedLocation: CLLocationCoordinate2D?
+    @Binding var currentAddress: String
+    @Environment(\.dismiss) private var dismiss
+    @State private var region: MKCoordinateRegion
+    @State private var isUpdatingAddress = false
+    
+    init(selectedLocation: Binding<CLLocationCoordinate2D?>, currentAddress: Binding<String>) {
+        self._selectedLocation = selectedLocation
+        self._currentAddress = currentAddress
+        
+        let defaultLocation = selectedLocation.wrappedValue ?? CLLocationCoordinate2D(latitude: 51.5074, longitude: -0.1278)
+        self._region = State(initialValue: MKCoordinateRegion(
+            center: defaultLocation,
+            span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+        ))
+    }
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                Map(coordinateRegion: $region, annotationItems: [MapPin(coordinate: region.center)]) { pin in
+                    MapAnnotation(coordinate: pin.coordinate) {
+                        VStack {
+                            Image(systemName: "mappin.circle.fill")
+                                .font(.system(size: 30))
+                                .foregroundColor(.red)
+                                .background(
+                                    Circle()
+                                        .fill(Color.white)
+                                        .frame(width: 20, height: 20)
+                                )
+                        }
+                    }
+                }
+                .onTapGesture { location in
+                    let coordinate = region.center
+                    region.center = coordinate
+                }
+                .onChange(of: region.center) { newCenter in
+                    selectedLocation = newCenter
+                    updateAddress(for: newCenter)
+                }
+                
+                // Address display
+                VStack(spacing: 12) {
+                    HStack {
+                        Image(systemName: "location.fill")
+                            .foregroundColor(.blue)
+                        Text("Selected Location")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                        Spacer()
+                    }
+                    
+                    if isUpdatingAddress {
+                        HStack {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                            Text("Updating address...")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                    } else {
+                        Text(currentAddress)
+                            .font(.subheadline)
+                            .foregroundColor(.primary)
+                            .multilineTextAlignment(.leading)
+                    }
+                }
+                .padding()
+                .background(Color(.systemGray6))
+            }
+            .navigationTitle("Select Location")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        selectedLocation = region.center
+                        dismiss()
+                    }
+                    .fontWeight(.semibold)
+                }
+            }
+        }
+    }
+    
+    private func updateAddress(for coordinate: CLLocationCoordinate2D) {
+        isUpdatingAddress = true
+        let geocoder = CLGeocoder()
+        geocoder.reverseGeocodeLocation(CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)) { placemarks, error in
+            DispatchQueue.main.async {
+                isUpdatingAddress = false
+                if let placemark = placemarks?.first {
+                    let addressComponents = [
+                        placemark.subThoroughfare,
+                        placemark.thoroughfare,
+                        placemark.locality,
+                        placemark.postalCode
+                    ].compactMap { $0 }
+                    
+                    currentAddress = addressComponents.joined(separator: ", ")
+                } else {
+                    currentAddress = "Address not found"
+                }
+            }
         }
     }
 }
