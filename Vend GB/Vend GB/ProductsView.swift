@@ -102,6 +102,9 @@ struct ProductsView: View {
                     self.products = data
                     self.filteredProducts = data
                     self.isLoading = false
+                    print("Loaded \(data.count) products")
+                    // Apply initial filtering
+                    self.filterProducts()
                 }
             } catch {
                 await MainActor.run {
@@ -132,6 +135,7 @@ struct ProductsView: View {
         }
         
         filteredProducts = filtered
+        print("Filtered products: \(filteredProducts.count) out of \(products.count)")
     }
 }
 
