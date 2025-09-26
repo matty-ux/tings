@@ -8,7 +8,8 @@ struct ProductDetailView: View {
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        ScrollView {
+        ZStack {
+            ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 // Product Image
                 AsyncImage(url: URL(string: product.imageUrl ?? "")) { image in
@@ -235,6 +236,12 @@ struct ProductDetailView: View {
                     }
                     .padding(.bottom, 20)
                 }
+            }
+            }
+            
+            // Floating Basket Button
+            if !cart.items.isEmpty {
+                FloatingBasketButton()
             }
         }
         .navigationBarTitleDisplayMode(.inline)
