@@ -5,6 +5,8 @@ struct ProductDetailView: View {
     @StateObject private var cart = CartManager.shared
     @State private var quantity: Int = 1
     @State private var showingAddedToCart = false
+    @State private var itemAddedToCart = false
+    @State private var showingBasket = false
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
@@ -213,13 +215,13 @@ struct ProductDetailView: View {
                         }
                         .padding(.horizontal, 20)
                         
-                        // Add to Cart Button
-                        Button(action: addToCart) {
+                        // Add to Cart / View Cart Button
+                        Button(action: itemAddedToCart ? { showingBasket = true } : addToCart) {
                             HStack {
-                                Image(systemName: "cart.badge.plus")
+                                Image(systemName: itemAddedToCart ? "cart.fill" : "cart.badge.plus")
                                     .font(.title3)
                                 
-                                Text("Add to Cart - £\(String(format: "%.2f", totalPrice))")
+                                Text(itemAddedToCart ? "View Cart" : "Add to Cart - £\(String(format: "%.2f", totalPrice))")
                                     .font(.headline)
                                     .fontWeight(.semibold)
                             }
@@ -228,7 +230,7 @@ struct ProductDetailView: View {
                             .padding(.vertical, 16)
                             .background(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .fill(product.available ? Color.blue : Color.gray)
+                                    .fill(product.available ? (itemAddedToCart ? Color.green : Color.blue) : Color.gray)
                             )
                         }
                         .disabled(!product.available)
@@ -252,6 +254,9 @@ struct ProductDetailView: View {
         } message: {
             Text("\(quantity) x \(product.name) added to your cart")
         }
+        .sheet(isPresented: $showingBasket) {
+            BasketView()
+        }
     }
     
     private var canIncreaseQuantity: Bool {
@@ -268,6 +273,7 @@ struct ProductDetailView: View {
     
     private func addToCart() {
         cart.add(product: product, quantity: quantity)
+        itemAddedToCart = true
         showingAddedToCart = true
     }
 }
