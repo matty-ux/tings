@@ -102,7 +102,6 @@ struct ProductsView: View {
                     self.products = data
                     self.filteredProducts = data
                     self.isLoading = false
-                    print("Loaded \(data.count) products")
                     // Apply initial filtering
                     self.filterProducts()
                 }
@@ -135,7 +134,6 @@ struct ProductsView: View {
         }
         
         filteredProducts = filtered
-        print("Filtered products: \(filteredProducts.count) out of \(products.count)")
     }
 }
 
@@ -272,18 +270,15 @@ struct ProductsGridView: View {
     let cart: CartManager
     
     var body: some View {
-        NavigationView {
-            LazyVGrid(columns: [
-                GridItem(.flexible(), spacing: 12),
-                GridItem(.flexible(), spacing: 12)
-            ], spacing: 16) {
-                ForEach(products) { product in
-                    ProductCard(product: product, cart: cart)
-                }
+        LazyVGrid(columns: [
+            GridItem(.flexible(), spacing: 12),
+            GridItem(.flexible(), spacing: 12)
+        ], spacing: 16) {
+            ForEach(products) { product in
+                ProductCard(product: product, cart: cart)
             }
-            .padding(.horizontal, 20)
         }
-        .navigationViewStyle(StackNavigationViewStyle())
+        .padding(.horizontal, 20)
     }
 }
 
