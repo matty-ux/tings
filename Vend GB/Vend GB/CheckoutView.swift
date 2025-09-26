@@ -3,7 +3,7 @@ import MapKit
 import CoreLocation
 
 // MARK: - CLLocationCoordinate2D Extension
-extension CLLocationCoordinate2D: Equatable {
+extension CLLocationCoordinate2D: @retroactive Equatable {
     public static func == (lhs: CLLocationCoordinate2D, rhs: CLLocationCoordinate2D) -> Bool {
         return abs(lhs.latitude - rhs.latitude) < 0.0001 && abs(lhs.longitude - rhs.longitude) < 0.0001
     }
@@ -610,6 +610,11 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
 }
 
+// MARK: - Map Pin
+struct MapPin: Identifiable {
+    let id = UUID()
+    let coordinate: CLLocationCoordinate2D
+}
 
 // MARK: - Map View
 struct MapView: View {
@@ -623,8 +628,8 @@ struct MapView: View {
             span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
         )
         
-        Map(coordinateRegion: .constant(mapRegion), interactionModes: .all, showsUserLocation: false) {
-            Annotation("Location", coordinate: mapCenter) {
+        Map(coordinateRegion: .constant(mapRegion), annotationItems: [MapPin(coordinate: mapCenter)]) { pin in
+            MapAnnotation(coordinate: pin.coordinate) {
                 Image(systemName: "mappin.circle.fill")
                     .font(.system(size: 30))
                     .foregroundColor(.red)
@@ -660,8 +665,8 @@ struct MapEditorView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                Map(coordinateRegion: $region, interactionModes: .all, showsUserLocation: false) {
-                    Annotation("Location", coordinate: region.center) {
+                Map(coordinateRegion: $region, annotationItems: [MapPin(coordinate: region.center)]) { pin in
+                    MapAnnotation(coordinate: pin.coordinate) {
                         Image(systemName: "mappin.circle.fill")
                             .font(.system(size: 30))
                             .foregroundColor(.red)
