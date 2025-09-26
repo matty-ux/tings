@@ -2,6 +2,13 @@ import SwiftUI
 import MapKit
 import CoreLocation
 
+// MARK: - CLLocationCoordinate2D Extension
+extension CLLocationCoordinate2D: Equatable {
+    public static func == (lhs: CLLocationCoordinate2D, rhs: CLLocationCoordinate2D) -> Bool {
+        return lhs.latitude == rhs.latitude && lhs.longitude == rhs.longitude
+    }
+}
+
 struct CheckoutView: View {
     @StateObject private var cart = CartManager.shared
     @StateObject private var locationManager = LocationManager()
@@ -603,11 +610,6 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
 }
 
-// MARK: - Map Pin
-struct MapPin: Identifiable {
-    let id = UUID()
-    let coordinate: CLLocationCoordinate2D
-}
 
 // MARK: - Map View
 struct MapView: View {
@@ -621,8 +623,8 @@ struct MapView: View {
             span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
         )
         
-        Map(coordinateRegion: .constant(mapRegion), annotationItems: [MapPin(coordinate: mapCenter)]) { pin in
-            MapAnnotation(coordinate: pin.coordinate) {
+        Map(coordinateRegion: .constant(mapRegion)) {
+            Annotation("Location", coordinate: mapCenter) {
                 Image(systemName: "mappin.circle.fill")
                     .font(.system(size: 30))
                     .foregroundColor(.red)
@@ -658,23 +660,20 @@ struct MapEditorView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                Map(coordinateRegion: $region, annotationItems: [MapPin(coordinate: region.center)]) { pin in
-                    MapAnnotation(coordinate: pin.coordinate) {
-                        VStack {
-                            Image(systemName: "mappin.circle.fill")
-                                .font(.system(size: 30))
-                                .foregroundColor(.red)
-                                .background(
-                                    Circle()
-                                        .fill(Color.white)
-                                        .frame(width: 20, height: 20)
-                                )
-                        }
+                Map(coordinateRegion: $region) {
+                    Annotation("Location", coordinate: region.center) {
+                        Image(systemName: "mappin.circle.fill")
+                            .font(.system(size: 30))
+                            .foregroundColor(.red)
+                            .background(
+                                Circle()
+                                    .fill(Color.white)
+                                    .frame(width: 20, height: 20)
+                            )
                     }
                 }
                 .onTapGesture { location in
-                    let coordinate = region.center
-                    region.center = coordinate
+                    // Handle tap to move pin
                 }
                 .onChange(of: region.center) { newCenter in
                     selectedLocation = newCenter
