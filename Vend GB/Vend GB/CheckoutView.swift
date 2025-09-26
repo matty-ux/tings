@@ -14,10 +14,6 @@ struct CheckoutView: View {
     @StateObject private var locationManager = LocationManager()
     @State private var name: String = ""
     @State private var phone: String = ""
-    @State private var line1: String = ""
-    @State private var line2: String = ""
-    @State private var city: String = ""
-    @State private var postcode: String = ""
     @State private var isSubmitting: Bool = false
     @State private var resultMessage: String?
     @State private var showingPaymentSheet = false
@@ -310,27 +306,6 @@ struct CheckoutView: View {
                     .padding(.horizontal, 20)
                 }
                 
-                // Address Details
-                VStack(spacing: 16) {
-                    HStack {
-                    Text("Delivery Address")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                        Spacer()
-                    }
-                        .padding(.horizontal, 20)
-                    
-                    VStack(spacing: 12) {
-                        ModernTextField(title: "Address Line 1", text: $line1, placeholder: "Street address", icon: "location")
-                        ModernTextField(title: "Address Line 2", text: $line2, placeholder: "Apartment, suite, etc. (optional)", icon: "building.2")
-                        HStack(spacing: 12) {
-                            ModernTextField(title: "City", text: $city, placeholder: "City", icon: "building")
-                            ModernTextField(title: "Postcode", text: $postcode, placeholder: "Postcode", icon: "number")
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                }
-                
                 // Cost Breakdown
                 VStack(spacing: 16) {
                     HStack {
@@ -435,7 +410,7 @@ struct CheckoutView: View {
                     .background(Color.black)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
-                .disabled(isSubmitting || cart.items.isEmpty || name.isEmpty || line1.isEmpty || city.isEmpty || postcode.isEmpty)
+                .disabled(isSubmitting || cart.items.isEmpty || name.isEmpty)
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)
             }
@@ -504,8 +479,8 @@ struct CheckoutView: View {
         
         let items = cart.items.map { CheckoutItem(productId: $0.product.id, qty: $0.quantity) }
         
-        // First, create the order on the server
-        let deliveryAddress = "\(line1)\(line2.isEmpty ? "" : ", \(line2)"), \(city), \(postcode)"
+        // Use map location for delivery address
+        let deliveryAddress = currentAddress
         let checkoutRequest = CheckoutRequest(
             customerName: name,
             customerPhone: phone.isEmpty ? nil : phone,
@@ -526,7 +501,7 @@ struct CheckoutView: View {
                 total: cart.total,
                 items: items,
                 customer: Customer(name: checkoutRequest.customerName, phone: checkoutRequest.customerPhone),
-                address: Address(line1: line1, line2: line2.isEmpty ? nil : line2, city: city, postcode: postcode)
+                address: Address(line1: currentAddress, line2: nil, city: "", postcode: "")
             )
             
             await MainActor.run {
