@@ -238,11 +238,6 @@ struct ProductDetailView: View {
                 }
             }
             }
-            
-            // Floating Basket Button
-            if !cart.items.isEmpty {
-                FloatingBasketButton()
-            }
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

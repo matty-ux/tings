@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CartBottomBar: View {
     @ObservedObject var cart: CartManager
+    @State private var showingBasket = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -51,10 +52,12 @@ struct CartBottomBar: View {
                 
                 Spacer()
                 
-                // Checkout button
-                NavigationLink(destination: CheckoutView()) {
+                // View Cart button
+                Button(action: {
+                    showingBasket = true
+                }) {
                     HStack(spacing: 8) {
-                        Text("Checkout")
+                        Text("View Cart")
                             .font(.system(size: 16, weight: .semibold))
                         Image(systemName: "arrow.right")
                             .font(.system(size: 14, weight: .semibold))
@@ -72,6 +75,7 @@ struct CartBottomBar: View {
                     .clipShape(Capsule())
                     .shadow(color: Color.green.opacity(0.3), radius: 4, x: 0, y: 2)
                 }
+                .buttonStyle(PlainButtonStyle())
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
@@ -79,6 +83,9 @@ struct CartBottomBar: View {
                 Color(.systemBackground)
                     .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: -4)
             )
+        }
+        .sheet(isPresented: $showingBasket) {
+            BasketView()
         }
     }
 }
