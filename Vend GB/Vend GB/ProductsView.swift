@@ -2,8 +2,11 @@ import SwiftUI
 
 struct ProductsView: View {
     @State private var products: [Product] = []
+    @State private var filteredProducts: [Product] = []
     @State private var isLoading: Bool = false
     @State private var errorMessage: String?
+    @State private var searchText: String = ""
+    @State private var selectedCategory: String = "All"
     @StateObject private var cart = CartManager.shared
     @AppStorage("isDarkMode") private var isDarkMode = false
 
@@ -37,8 +40,35 @@ struct ProductsView: View {
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                         }
+                    } else if filteredProducts.isEmpty && (!searchText.isEmpty || selectedCategory != "All") {
+                        VStack(spacing: 20) {
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 50))
+                                .foregroundColor(.secondary)
+                            Text("No products found")
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                            Text("Try adjusting your search or category filter")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                            Button("Clear Filters") {
+                                searchText = ""
+                                selectedCategory = "All"
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .controlSize(.large)
+                        }
+                        .padding()
                     } else {
-                        MainContentView(products: products, cart: cart, load: load)
+                        MainContentView(
+                            products: filteredProducts,
+                            searchText: $searchText,
+                            selectedCategory: $selectedCategory,
+                            allProducts: products,
+                            cart: cart,
+                            load: load
+                        )
                     }
                 }
             }
@@ -53,6 +83,12 @@ struct ProductsView: View {
             }
         }
         .task { load() }
+        .onChange(of: searchText) { _ in
+            filterProducts()
+        }
+        .onChange(of: selectedCategory) { _ in
+            filterProducts()
+        }
         .preferredColorScheme(isDarkMode ? .dark : .light)
     }
 
@@ -64,6 +100,7 @@ struct ProductsView: View {
                 let data = try await ProductService.shared.fetchProducts()
                 await MainActor.run {
                     self.products = data
+                    self.filteredProducts = data
                     self.isLoading = false
                 }
             } catch {
@@ -73,6 +110,28 @@ struct ProductsView: View {
                 }
             }
         }
+    }
+    
+    private func filterProducts() {
+        var filtered = products
+        
+        // Filter by search text
+        if !searchText.isEmpty {
+            filtered = filtered.filter { product in
+                product.name.localizedCaseInsensitiveContains(searchText) ||
+                product.shortDesc?.localizedCaseInsensitiveContains(searchText) == true ||
+                product.category?.localizedCaseInsensitiveContains(searchText) == true
+            }
+        }
+        
+        // Filter by category
+        if selectedCategory != "All" {
+            filtered = filtered.filter { product in
+                product.category?.localizedCaseInsensitiveContains(selectedCategory) == true
+            }
+        }
+        
+        filteredProducts = filtered
     }
 }
 
@@ -84,21 +143,41 @@ struct ProductsView: View {
 
 struct MainContentView: View {
     let products: [Product]
+    @Binding var searchText: String
+    @Binding var selectedCategory: String
+    let allProducts: [Product]
     let cart: CartManager
     let load: () -> Void
+    
+    var availableCategories: [String] {
+        let categories = Set(allProducts.compactMap { $0.category })
+        return ["All"] + Array(categories).sorted()
+    }
     
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                HeroSectionView()
+                HeroSectionView(
+                    searchText: $searchText,
+                    selectedCategory: $selectedCategory,
+                    availableCategories: availableCategories
+                )
                 ProductsGridView(products: products, cart: cart)
             }
         }
         .refreshable { load() }
     }
+    
+    private func filterProducts() {
+        // This will be handled by the parent view
+    }
 }
 
 struct HeroSectionView: View {
+    @Binding var searchText: String
+    @Binding var selectedCategory: String
+    let availableCategories: [String]
+    
     var body: some View {
         VStack(spacing: 16) {
             // App Logo/Title
@@ -111,14 +190,6 @@ struct HeroSectionView: View {
                 }
                 
                 Spacer()
-                
-                HStack(spacing: 16) {
-                    Button(action: {}) {
-                        Image(systemName: "magnifyingglass")
-                            .font(.title2)
-                            .foregroundColor(.primary)
-                    }
-                }
             }
             .padding(.horizontal, 20)
             .padding(.top, 8)
@@ -130,24 +201,34 @@ struct HeroSectionView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 20)
             
-            // Category Pills
-            CategoryPillsView()
-            
             // Search Bar
-            SearchBarView()
+            SearchBarView(searchText: $searchText)
+            
+            // Category Pills
+            CategoryPillsView(
+                selectedCategory: $selectedCategory,
+                availableCategories: availableCategories
+            )
         }
         .padding(.bottom, 20)
     }
 }
 
 struct CategoryPillsView: View {
+    @Binding var selectedCategory: String
+    let availableCategories: [String]
+    
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 12) {
-                CategoryPillView(title: "Deals", isSelected: true)
-                CategoryPillView(title: "Fast Delivery", isSelected: false)
-                CategoryPillView(title: "New", isSelected: false)
-                CategoryPillView(title: "Hot", isSelected: false)
+                ForEach(availableCategories, id: \.self) { category in
+                    CategoryPillView(
+                        title: category,
+                        isSelected: selectedCategory == category
+                    ) {
+                        selectedCategory = category
+                    }
+                }
             }
             .padding(.horizontal, 20)
         }
@@ -155,13 +236,24 @@ struct CategoryPillsView: View {
 }
 
 struct SearchBarView: View {
+    @Binding var searchText: String
+    
     var body: some View {
         HStack {
             Image(systemName: "magnifyingglass")
                 .foregroundColor(.secondary)
-            Text("Search for British favorites...")
-                .foregroundColor(.secondary)
-            Spacer()
+            
+            TextField("Search for British favorites...", text: $searchText)
+                .textFieldStyle(PlainTextFieldStyle())
+            
+            if !searchText.isEmpty {
+                Button(action: {
+                    searchText = ""
+                }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.secondary)
+                }
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -191,18 +283,22 @@ struct ProductsGridView: View {
 struct CategoryPillView: View {
     let title: String
     let isSelected: Bool
+    let action: () -> Void
     
     var body: some View {
-        Text(title)
-            .font(.subheadline)
-            .fontWeight(.medium)
-            .foregroundColor(isSelected ? .white : .primary)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? Color.blue : Color(.secondarySystemGroupedBackground))
-            )
+        Button(action: action) {
+            Text(title)
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundColor(isSelected ? .white : .primary)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(isSelected ? Color.blue : Color(.secondarySystemGroupedBackground))
+                )
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 
